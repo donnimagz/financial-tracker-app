@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uganda Personal Finance Tracker — UGX</title>
+  
+  <!-- Tailwind CSS & ECharts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            zinc: {
+              850: '#1e1e24',
+              950: '#09090b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-[#09090b] text-[#fafafa] min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-[#0c0c0f]/80 backdrop-blur sticky top-0 z-30 transition-colors">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand & Badges -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg text-zinc-950 dark:text-zinc-50 leading-tight">Financial Tracker</h1>
+            <span class="px-2 py-0.5 text-xs font-mono font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">UGX</span>
+          </div>
+          <p id="headerDateRange" class="text-xs text-zinc-500 dark:text-zinc-400">Loading ledger data...</p>
+        </div>
+      </div>
+
+      <!-- Center: Core Window Toggle -->
+      <div class="hidden md:flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium">
+        <button id="windowCoreBtn" onclick="setWindowMode('core')" class="px-3 py-1.5 rounded-lg transition-all font-medium bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm">
+          Core Window (2022-03+)
+        </button>
+        <button id="windowAllBtn" onclick="setWindowMode('all')" class="px-3 py-1.5 rounded-lg transition-all text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200">
+          Full Ledger (All Time)
+        </button>
+      </div>
+
+      <!-- Right: Action Buttons -->
+      <div class="flex items-center gap-2.5">
+        <!-- Ask AI Button -->
+        <button onclick="toggleChatPanel(true)" class="relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-md shadow-blue-600/25 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Ask Gemini</span>
+          <span class="hidden sm:inline-block px-1.5 py-0.2 text-[10px] uppercase font-mono rounded bg-white/20">AI</span>
+        </button>
+
+        <!-- Quick Add Transaction Button -->
+        <button onclick="openNewTxModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors shadow-sm">
+          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span class="hidden sm:inline">Add Transaction</span>
+        </button>
+
+        <!-- Lock / Sign Out Button -->
+        <button id="lockAppBtn" onclick="lockApp()" class="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Lock Ledger">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Toggle Dark/Light Mode">
+          <svg id="sunIcon" class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg id="moonIcon" class="w-4 h-4 block dark:hidden text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- NAVIGATION TABS -->
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto border-t border-zinc-100 dark:border-zinc-800/60 text-sm">
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab active">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+        <span>Executive Dashboard</span>
+      </button>
+
+      <button onclick="switchTab('transactions')" id="tab-transactions" class="nav-tab">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+        <span>Transactions Ledger</span>
+        <span id="tabTxBadge" class="ml-1 text-xs px-1.5 py-0.2 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono">4,221</span>
+      </button>
+
+      <button onclick="switchTab('analytics')" id="tab-analytics" class="nav-tab">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+        <span>Categories & Trends</span>
+      </button>
+
+      <button onclick="switchTab('review')" id="tab-review" class="nav-tab">
+        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <span>Needs Review</span>
+        <span id="tabReviewBadge" class="ml-1 text-xs px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-mono font-bold">541</span>
+      </button>
+
+      <button onclick="switchTab('recurring')" id="tab-recurring" class="nav-tab">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        <span>Recurring & Accounts</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+
+    <!-- ============================================== -->
+    <!-- TAB 1: EXECUTIVE DASHBOARD                     -->
+    <!-- ============================================== -->
+    <div id="view-dashboard" class="flex flex-col gap-6">
+
+      <!-- KPI CARDS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        
+        <!-- KPI 1: Income -->
+        <div class="card card-hover flex flex-col justify-between">
+          <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Total Income</span>
+            <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12" /></svg>
+            </div>
+          </div>
+          <div>
+            <div id="kpiIncome" class="text-xl sm:text-2xl font-extrabold font-mono text-zinc-950 dark:text-zinc-50">UGX 0.00</div>
+            <p class="text-xs text-zinc-500 mt-1">Excludes own-account transfers</p>
+          </div>
+        </div>
+
+        <!-- KPI 2: Expenditure -->
+        <div class="card card-hover flex flex-col justify-between">
+          <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Total Expenditure</span>
+            <div class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" /></svg>
+            </div>
+          </div>
+          <div>
+            <div id="kpiExpenditure" class="text-xl sm:text-2xl font-extrabold font-mono text-zinc-950 dark:text-zinc-50">UGX 0.00</div>
+            <p class="text-xs text-zinc-500 mt-1">Direct spending out of accounts</p>
+          </div>
+        </div>
+
+        <!-- KPI 3: Net Cash Flow -->
+        <div class="card card-hover flex flex-col justify-between">
+          <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Net Cash Flow</span>
+            <div id="kpiNetIcon" class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            </div>
+          </div>
+          <div>
+            <div id="kpiNet" class="text-xl sm:text-2xl font-extrabold font-mono text-zinc-950 dark:text-zinc-50">UGX 0.00</div>
+            <p id="kpiNetLabel" class="text-xs text-zinc-500 mt-1">Cumulative balance position</p>
+          </div>
+        </div>
+
+        <!-- KPI 4: Monthly Average Spend -->
+        <div class="card card-hover flex flex-col justify-between">
+          <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Monthly Avg Spend</span>
+            <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            </div>
+          </div>
+          <div>
+            <div id="kpiMonthlyAvg" class="text-xl sm:text-2xl font-extrabold font-mono text-zinc-950 dark:text-zinc-50">UGX 0.00</div>
+            <p class="text-xs text-zinc-500 mt-1">Expenditure / active months</p>
+          </div>
+        </div>
+
+        <!-- KPI 5: Daily Average Spend -->
+        <div class="card card-hover flex flex-col justify-between">
+          <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Daily Avg Spend</span>
+            <div class="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+          </div>
+          <div>
+            <div id="kpiDailyAvg" class="text-xl sm:text-2xl font-extrabold font-mono text-zinc-950 dark:text-zinc-50">UGX 0.00</div>
+            <p class="text-xs text-zinc-500 mt-1">Expenditure / active days</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ANALYTICAL CHARTS (Strict 1-2 Charts per row, prominent visual display) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Monthly Cash Flow (Takes 2 cols) -->
+        <div class="card lg:col-span-2 flex flex-col">
+          <div class="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800 mb-4">
+            <div>
+              <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Monthly Cash Flow Trend</h3>
+              <p class="text-xs text-zinc-500">Income vs. Expenditure vs. Net Cash Flow over time</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Income
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium ml-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Expense
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-medium ml-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Net Flow
+              </span>
+            </div>
+          </div>
+          <div id="monthlyChart" class="w-full h-[360px]"></div>
+        </div>
+
+        <!-- Right: Category Spend Donut (Takes 1 col) -->
+        <div class="card flex flex-col">
+          <div class="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800 mb-4">
+            <div>
+              <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Spending by Category</h3>
+              <p class="text-xs text-zinc-500">Total expenditure distribution</p>
+            </div>
+          </div>
+          <div id="categoryChart" class="w-full h-[360px]"></div>
+        </div>
+
+      </div>
+
+      <!-- LOWER DASHBOARD ROW: Accounts Breakdown & Recent High-Value Transactions -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Accounts Inflow/Outflow Breakdown -->
+        <div class="card flex flex-col">
+          <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+            <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Account Activity</h3>
+            <span class="text-xs text-zinc-500 font-mono">Inflow vs Outflow</span>
+          </div>
+          <div id="accountsList" class="flex flex-col gap-3 overflow-y-auto max-h-[320px] pr-1">
+            <!-- Populated via JS -->
+            <div class="animate-pulse flex flex-col gap-2">
+              <div class="h-10 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
+              <div class="h-10 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
+              <div class="h-10 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card lg:col-span-2 flex flex-col">
+          <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+            <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Recent Transactions</h3>
+            <button onclick="switchTab('transactions')" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
+              View All 4,221 →
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description / Merchant</th>
+                  <th>Account</th>
+                  <th>Category</th>
+                  <th class="text-right">Amount (UGX)</th>
+                </tr>
+              </thead>
+              <tbody id="recentTxTbody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- TAB 2: TRANSACTIONS LEDGER                     -->
+    <!-- ============================================== -->
+    <div id="view-transactions" class="hidden flex flex-col gap-4">
+
+      <!-- TOOLBAR: Filters & Search -->
+      <div class="card p-4 flex flex-col gap-3">
+        <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+          
+          <!-- Search input -->
+          <div class="relative flex-1">
+            <svg class="w-4 h-4 absolute left-3.5 top-3 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input 
+              type="text" 
+              id="txSearchInput" 
+              placeholder="Search description, merchant, notes, TxID..." 
+              oninput="debounceSearch()"
+              class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-zinc-950 dark:text-zinc-50 placeholder-zinc-400 shadow-sm"
+            />
+          </div>
+
+          <!-- Quick Filter Selectors -->
+          <div class="flex flex-wrap items-center gap-2">
+            
+            <!-- Type Filter -->
+            <select id="filterType" onchange="applyTxFilters()" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+              <option value="">All Types</option>
+              <option value="Expense">Expenses</option>
+              <option value="Income">Income</option>
+            </select>
+
+            <!-- Account Filter -->
+            <select id="filterAccount" onchange="applyTxFilters()" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+              <option value="">All Accounts</option>
+            </select>
+
+            <!-- Group Filter -->
+            <select id="filterGroup" onchange="applyTxFilters()" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+              <option value="">All Groups</option>
+            </select>
+
+            <!-- Flag Filter -->
+            <select id="filterFlag" onchange="applyTxFilters()" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+              <option value="">All Flags</option>
+              <option value="any">Any Flagged</option>
+              <option value="needs-review">Needs Review Only</option>
+              <option value="transfer-between-own-accounts">Own Account Transfer</option>
+              <option value="needs-review-categorise">Needs Categorisation</option>
+              <option value="needs-review-income-source">Review Income Source</option>
+              <option value="needs-review-family-amount">Review Family Amount</option>
+              <option value="resolved">Resolved</option>
+            </select>
+
+            <!-- Reset Button -->
+            <button onclick="resetTxFilters()" class="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium" title="Reset Filters">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Date Range Filter Row -->
+        <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500">
+          <span class="font-medium">Date Range:</span>
+          <input type="date" id="filterDateFrom" onchange="applyTxFilters()" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none">
+          <span>to</span>
+          <input type="date" id="filterDateTo" onchange="applyTxFilters()" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none">
+          <span id="txFilteredCount" class="ml-auto font-mono text-zinc-400">Showing 0 of 0 transactions</span>
+        </div>
+      </div>
+
+      <!-- MAIN DATA TABLE -->
+      <div class="finance-table-container">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th onclick="changeSort('date')" class="cursor-pointer">Date <span id="sort-date">▼</span></th>
+              <th>Type</th>
+              <th>Description & Details</th>
+              <th>Account</th>
+              <th>Category / Group</th>
+              <th onclick="changeSort('amount')" class="cursor-pointer text-right">Amount (UGX) <span id="sort-amount"></span></th>
+              <th>Flag / Status</th>
+            </tr>
+          </thead>
+          <tbody id="txTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION BAR -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 py-2">
+        <div class="flex items-center gap-2 text-xs text-zinc-500">
+          <span>Rows per page:</span>
+          <select id="pageSizeSelect" onchange="changePageSize(this.value)" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-xs">
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <span id="pageInfoText" class="font-mono ml-2">Page 1 of 1</span>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <button id="btnFirstPage" onclick="goToPage(1)" class="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none" title="First Page">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+          </button>
+          <button id="btnPrevPage" onclick="changePage(-1)" class="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none" title="Previous Page">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <span id="currentPageBadge" class="px-3 py-1 text-xs font-mono font-semibold rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">1</span>
+          <button id="btnNextPage" onclick="changePage(1)" class="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none" title="Next Page">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+          <button id="btnLastPage" onclick="goToLastPage()" class="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none" title="Last Page">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- TAB 3: CATEGORIES & ANALYTICS                  -->
+    <!-- ============================================== -->
+    <div id="view-analytics" class="hidden flex flex-col gap-6">
+      
+      <!-- Top Categories Bar Chart -->
+      <div class="card flex flex-col">
+        <div class="pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+          <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Top Spending Subcategories (UGX)</h3>
+          <p class="text-xs text-zinc-500">Expenditure rank, monthly average, and transaction volume</p>
+        </div>
+        <div id="analyticsBarChart" class="w-full h-[400px]"></div>
+      </div>
+
+      <!-- Categories Table -->
+      <div class="card flex flex-col">
+        <div class="pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+          <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Category Breakdown & Averages</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="finance-table">
+            <thead>
+              <tr>
+                <th>Category Group</th>
+                <th>Subcategory</th>
+                <th class="text-right">Total Spent (UGX)</th>
+                <th class="text-right">% of Total Spend</th>
+                <th class="text-right">Monthly Average</th>
+                <th class="text-right">Daily Average</th>
+                <th class="text-center"># Transactions</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesTableBody">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- TAB 4: NEEDS REVIEW WORKBENCH                  -->
+    <!-- ============================================== -->
+    <div id="view-review" class="hidden flex flex-col gap-4">
+      
+      <div class="card flex flex-col gap-3">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+              Needs Review Resolution Workbench
+            </h3>
+            <p class="text-xs text-zinc-500 mt-0.5">
+              Review, verify, and resolve flagged SMS backfill records and unclassified transactions.
+            </p>
+          </div>
+          
+          <!-- Batch Actions -->
+          <div class="flex items-center gap-2">
+            <button onclick="resolveSelectedReview(true)" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm transition-colors">
+              ✓ Resolve Selected
+            </button>
+            <button onclick="dismissSelectedReview()" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 shadow-sm transition-colors">
+              Dismiss Flag
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Chips for Review Flags -->
+        <div id="reviewFlagChips" class="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+          <button onclick="filterReviewByFlag('')" class="review-chip active px-3 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-medium">All Flags (<span id="countAllFlags">541</span>)</button>
+          <button onclick="filterReviewByFlag('needs-review-categorise')" class="review-chip px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">Categorisation (<span id="countCatFlags">297</span>)</button>
+          <button onclick="filterReviewByFlag('transfer-between-own-accounts')" class="review-chip px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">Own Transfers (<span id="countTransferFlags">189</span>)</button>
+          <button onclick="filterReviewByFlag('needs-review-income-source')" class="review-chip px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">Income Source (<span id="countIncomeFlags">43</span>)</button>
+          <button onclick="filterReviewByFlag('needs-review-family-amount')" class="review-chip px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">Family Amount (<span id="countFamilyFlags">12</span>)</button>
+        </div>
+      </div>
+
+      <!-- Review Table -->
+      <div class="finance-table-container">
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th class="w-8 text-center"><input type="checkbox" id="selectAllReview" onchange="toggleSelectAllReview(this.checked)"></th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Description / Raw SMS</th>
+              <th>Account</th>
+              <th class="text-right">Amount (UGX)</th>
+              <th>Flag Reason</th>
+              <th class="text-right">Quick Action</th>
+            </tr>
+          </thead>
+          <tbody id="reviewTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- TAB 5: RECURRING & ACCOUNTS                    -->
+    <!-- ============================================== -->
+    <div id="view-recurring" class="hidden flex flex-col gap-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Recurring Commitments -->
+        <div class="card lg:col-span-2 flex flex-col">
+          <div class="pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+            <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Recurring Expenses Tracker</h3>
+            <p class="text-xs text-zinc-500">Regular commitments present in 3+ distinct months with projected monthly equivalent.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th>Commitment</th>
+                  <th>Group</th>
+                  <th class="text-right">Total Spent (UGX)</th>
+                  <th class="text-center">Distinct Months</th>
+                  <th class="text-right">Est. Monthly Equiv (UGX)</th>
+                </tr>
+              </thead>
+              <tbody id="recurringTableBody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Accounts Summary & Balances -->
+        <div class="card flex flex-col">
+          <div class="pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+            <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Accounts Liquidity & Net Flow</h3>
+            <p class="text-xs text-zinc-500">Total Money In vs Money Out per account</p>
+          </div>
+          <div id="accountsFlowChart" class="w-full h-[320px]"></div>
+          <div id="accountsFullList" class="flex flex-col gap-2 mt-4 overflow-y-auto max-h-[300px]">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ============================================== -->
+  <!-- GEMINI AI CHAT SLIDE-OVER DRAWER              -->
+  <!-- ============================================== -->
+  <div id="chatDrawerBackdrop" onclick="toggleChatPanel(false)" class="drawer-backdrop"></div>
+  <div id="chatDrawer" class="drawer-panel flex flex-col">
+    
+    <!-- Drawer Header -->
+    <div class="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-bold text-sm text-zinc-950 dark:text-zinc-50">Gemini Financial Analyst</h3>
+          <p class="text-[11px] text-zinc-500 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Grounded SQLite Engine (4,221 records)
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <button onclick="clearChatHistory()" class="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs" title="Clear Chat">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+        </button>
+        <button onclick="toggleChatPanel(false)" class="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" title="Close">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages Stream Area -->
+    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+      <!-- Default welcome bubble -->
+      <div class="flex gap-3 flex-row">
+        <div class="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        </div>
+        <div class="flex-1 flex flex-col gap-2">
+          <div class="p-3 rounded-2xl rounded-tl-none bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-sm leading-relaxed border border-zinc-200 dark:border-zinc-700/50 shadow-sm">
+            <p>Hello! I am your personal financial analyst. I can answer any questions about your transactions, spending habits, recurring commitments, or accounts.</p>
+          </div>
+          <!-- Quick sample questions -->
+          <div class="flex flex-col gap-1.5 mt-1">
+            <span class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Suggested queries:</span>
+            <button onclick="sendChatMessage('How much did I spend on Housing vs Medical?')" class="text-left text-xs bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 p-2 rounded-xl border border-blue-200 dark:border-blue-800/30 transition-colors">
+              💬 How much did I spend on Housing vs Medical?
+            </button>
+            <button onclick="sendChatMessage('What are my biggest recurring monthly expenses?')" class="text-left text-xs bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 p-2 rounded-xl border border-blue-200 dark:border-blue-800/30 transition-colors">
+              💬 What are my biggest recurring monthly expenses?
+            </button>
+            <button onclick="sendChatMessage('Show summary of transactions needing review')" class="text-left text-xs bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 p-2 rounded-xl border border-blue-200 dark:border-blue-800/30 transition-colors">
+              💬 Show summary of transactions needing review
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Input Form -->
+    <form id="chatForm" onsubmit="handleChatSubmit(event)" class="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0f] relative">
+      <div class="relative flex items-end">
+        <textarea 
+          id="chatTextarea" 
+          rows="1" 
+          placeholder="Ask a question about your finances..." 
+          onkeydown="handleChatKeyDown(event)"
+          class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-zinc-950 dark:text-zinc-100 placeholder-zinc-400 resize-none max-h-28 overflow-y-auto"
+        ></textarea>
+        <button type="submit" id="chatSendBtn" class="absolute right-2.5 bottom-2.5 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-40">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        </button>
+      </div>
+      <div class="text-[10px] text-zinc-500 mt-1 flex justify-between px-1">
+        <span>Enter to send, Shift+Enter for new line</span>
+        <span class="font-mono">UGX Analytics</span>
+      </div>
+    </form>
+
+  </div>
+
+  <!-- ============================================== -->
+  <!-- TRANSACTION DETAIL INVESTIGATION DRAWER       -->
+  <!-- ============================================== -->
+  <div id="txDetailBackdrop" onclick="closeTxDetailDrawer()" class="drawer-backdrop"></div>
+  <div id="txDetailDrawer" class="drawer-panel flex flex-col">
+    <div class="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
+      <div>
+        <h3 class="font-bold text-sm text-zinc-950 dark:text-zinc-50">Transaction Details</h3>
+        <p id="txDetailIdLabel" class="text-xs text-zinc-500 font-mono">ID: #0</p>
+      </div>
+      <button onclick="closeTxDetailDrawer()" class="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+      
+      <!-- Amount Badge Block -->
+      <div class="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        <div>
+          <span class="text-xs text-zinc-500 uppercase font-semibold">Amount</span>
+          <div id="txDetailAmount" class="text-2xl font-bold font-mono text-zinc-950 dark:text-zinc-50">UGX 0.00</div>
+        </div>
+        <span id="txDetailTypeBadge" class="badge badge-expense text-sm font-semibold">Expense</span>
+      </div>
+
+      <!-- Raw Description / SMS -->
+      <div>
+        <label class="text-xs font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Description / Raw Message</label>
+        <div id="txDetailDesc" class="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-xs font-mono text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-750 break-words"></div>
+      </div>
+
+      <!-- Metadata Fields -->
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="text-zinc-500 font-medium block mb-1">Date</label>
+          <input type="text" id="txDetailDate" readonly class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2 font-mono">
+        </div>
+        <div>
+          <label class="text-zinc-500 font-medium block mb-1">Account</label>
+          <input type="text" id="txDetailAccount" readonly class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2">
+        </div>
+      </div>
+
+      <!-- Editable Classification Form -->
+      <div class="flex flex-col gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+        <h4 class="text-xs font-bold text-zinc-950 dark:text-zinc-50 uppercase tracking-wider">Classification & Review</h4>
+        
+        <div>
+          <label class="text-xs font-medium text-zinc-500 block mb-1">Subcategory</label>
+          <input type="text" id="txDetailSubcategory" class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-zinc-500 block mb-1">Group</label>
+          <input type="text" id="txDetailGroup" class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-zinc-500 block mb-1">Notes / Tags</label>
+          <textarea id="txDetailNotes" rows="3" class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+        </div>
+
+        <div id="txDetailFlagSection" class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-bold text-amber-700 dark:text-amber-400">Review Flag</span>
+            <p id="txDetailFlagText" class="text-xs text-amber-600 dark:text-amber-300 font-mono">none</p>
+          </div>
+          <button onclick="resolveCurrentTxFlag()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors">
+            Mark Resolved
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
+      <button onclick="closeTxDetailDrawer()" class="px-4 py-2 rounded-xl text-xs font-medium border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300">
+        Cancel
+      </button>
+      <button onclick="saveTxDetailChanges()" class="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-md transition-colors">
+        Save Changes
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- ADD TRANSACTION MODAL                         -->
+  <!-- ============================================== -->
+  <div id="newTxModalBackdrop" class="modal-backdrop">
+    <div class="modal-dialog p-6 flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+        <h3 class="font-bold text-base text-zinc-950 dark:text-zinc-50">Add New Transaction</h3>
+        <button onclick="closeNewTxModal()" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <form id="newTxForm" onsubmit="handleNewTxSubmit(event)" class="flex flex-col gap-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-medium text-zinc-500 block mb-1">Date *</label>
+            <input type="date" id="newTxDate" required class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-zinc-500 block mb-1">Type *</label>
+            <select id="newTxType" required class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs">
+              <option value="Expense">Expense</option>
+              <option value="Income">Income</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-medium text-zinc-500 block mb-1">Amount (UGX) *</label>
+            <input type="number" step="100" id="newTxAmount" required placeholder="50000" class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs font-mono">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-zinc-500 block mb-1">Account *</label>
+            <select id="newTxAccount" required class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs">
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Bank">Stanbic / Bank</option>
+              <option value="Cash">Cash</option>
+              <option value="FlexiPay">FlexiPay</option>
+              <option value="Wise">Wise</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-zinc-500 block mb-1">Description / Merchant *</label>
+          <input type="text" id="newTxDesc" required placeholder="e.g. Fuel Shell Bugolobi, Groceries, Dinner" class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-medium text-zinc-500 block mb-1">Subcategory</label>
+            <input type="text" id="newTxSubcat" placeholder="e.g. Transport, Groceries, Medical" class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-zinc-500 block mb-1">Group</label>
+            <select id="newTxGroup" class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs">
+              <option value="Living">Living</option>
+              <option value="Health">Health</option>
+              <option value="Financial">Financial</option>
+              <option value="Lifestyle">Lifestyle</option>
+              <option value="Giving & Family">Giving & Family</option>
+              <option value="Work & Business">Work & Business</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-zinc-500 block mb-1">Notes</label>
+          <input type="text" id="newTxNotes" placeholder="Optional context or reference" class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-2.5 text-xs">
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200 dark:border-zinc-800 mt-2">
+          <button type="button" onclick="closeNewTxModal()" class="px-4 py-2 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-md transition-colors">Create Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- LOCK SCREEN MODAL / OVERLAY                  -->
+  <!-- ============================================== -->
+  <div id="lockScreen" class="fixed inset-0 bg-[#09090b] z-[100] flex items-center justify-center p-4 transition-all duration-300">
+    <div class="max-w-md w-full p-8 rounded-2xl bg-[#0c0c0f] border border-zinc-800 shadow-2xl flex flex-col items-center text-center">
+      <!-- Shield/Lock icon -->
+      <div class="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-500 flex items-center justify-center mb-5 shadow-inner">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+
+      <h2 class="text-xl font-bold text-zinc-50 mb-1.5">Financial Tracker</h2>
+      <p class="text-xs text-zinc-400 mb-6 max-w-xs leading-relaxed">
+        This ledger contains private financial records. Enter passcode to access.
+      </p>
+
+      <form id="lockForm" onsubmit="handleUnlockSubmit(event)" class="w-full flex flex-col gap-3">
+        <div class="relative w-full">
+          <input 
+            type="password" 
+            id="passcodeInput" 
+            placeholder="Enter passcode (default: 2026)" 
+            autocomplete="current-password"
+            autofocus
+            class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-center text-sm font-mono tracking-widest text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          />
+        </div>
+
+        <div id="lockErrorMsg" class="hidden text-xs text-rose-400 font-medium py-1">
+          Incorrect passcode. Please try again.
+        </div>
+
+        <button 
+          type="submit" 
+          id="unlockBtn" 
+          class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/20 transition-all"
+        >
+          Unlock Ledger
+        </button>
+
+        <p class="text-[11px] text-zinc-500 mt-2">
+          Passcode can be changed via <code class="font-mono text-zinc-400">APP_PASSWORD</code> in environment.
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- APPLICATION CONTROLLER -->
+  <script src="app.js"></script>
+</body>
+</html>
