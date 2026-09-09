@@ -14,14 +14,14 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 SOURCE_FILES = {
-    'transactions': '/Users/donmagezi/.gemini/antigravity/brain/9ee1effc-1699-4b7e-a7d9-05c49986140a/.system_generated/steps/34/content.md',
-    'monthly': '/Users/donmagezi/.gemini/antigravity/brain/9ee1effc-1699-4b7e-a7d9-05c49986140a/.system_generated/steps/20/content.md',
-    'categories': '/Users/donmagezi/.gemini/antigravity/brain/9ee1effc-1699-4b7e-a7d9-05c49986140a/.system_generated/steps/22/content.md',
-    'accounts': '/Users/donmagezi/.gemini/antigravity/brain/9ee1effc-1699-4b7e-a7d9-05c49986140a/.system_generated/steps/28/content.md',
-    'recurring': '/Users/donmagezi/.gemini/antigravity/brain/9ee1effc-1699-4b7e-a7d9-05c49986140a/.system_generated/steps/26/content.md',
-    'daily': '/Users/donmagezi/.gemini/antigravity/brain/9ee1effc-1699-4b7e-a7d9-05c49986140a/.system_generated/steps/38/content.md',
-    'y2026': '/Users/donmagezi/.gemini/antigravity/brain/9ee1effc-1699-4b7e-a7d9-05c49986140a/.system_generated/steps/32/content.md',
-    'needs_review': '/Users/donmagezi/.gemini/antigravity/brain/9ee1effc-1699-4b7e-a7d9-05c49986140a/.system_generated/steps/30/content.md'
+    'transactions': os.path.join(DATA_DIR, 'transactions.csv'),
+    'monthly': os.path.join(DATA_DIR, 'monthly.csv'),
+    'categories': os.path.join(DATA_DIR, 'categories.csv'),
+    'accounts': os.path.join(DATA_DIR, 'accounts.csv'),
+    'recurring': os.path.join(DATA_DIR, 'recurring.csv'),
+    'daily': os.path.join(DATA_DIR, 'daily.csv'),
+    'y2026': os.path.join(DATA_DIR, 'y2026.csv'),
+    'needs_review': os.path.join(DATA_DIR, 'needs_review.csv')
 }
 
 def clean_csv_lines(filepath):

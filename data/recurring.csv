@@ -1,0 +1,40 @@
+Title: Live Content
+
+Description: Fetched live
+
+Source: https://docs.google.com/spreadsheets/d/1cqnTEXHBulQZrwpstH4wl-zhlXGpn_2HWKnUhfvO0y4/export?format=csv&gid=6679219
+
+---
+
+Recurring Item,Category Group,Total Spent (UGX),Distinct Months,Est. Monthly Equiv
+Housing,Living,"44,024,250.00",39,"1,128,827.00"
+Medical,Health,"20,900,490.00",48,"435,427.00"
+Social Activities,Lifestyle,"16,795,125.00",32,"524,848.00"
+Substances,Other,"16,488,800.00",24,"687,033.00"
+Car & Fuel,Living,"15,585,255.00",43,"362,448.00"
+Groceries,Living,"14,124,924.00",50,"282,498.00"
+Peer Payment,Peer & People,"13,727,880.00",13,"1,055,991.00"
+Food & Dining,Living,"11,181,470.00",45,"248,477.00"
+Utilities,Living,"10,653,713.00",44,"242,130.00"
+Uncategorized,Other,"10,575,270.00",45,"235,006.00"
+Communication,Living,"7,583,573.00",46,"164,860.00"
+Loans & Lending,Financial,"7,036,555.00",20,"351,828.00"
+Staff,Work & Business,"6,755,025.00",26,"259,809.00"
+Business Expenses,Work & Business,"3,137,165.00",29,"108,178.00"
+Personal Care,Living,"2,497,875.00",20,"124,894.00"
+Miscellaneous,Lifestyle,"2,459,275.00",33,"74,523.00"
+Travel,Lifestyle,"2,380,000.00",6,"396,667.00"
+Family Support,Giving & Family,"2,015,500.00",18,"111,972.00"
+Transport,Living,"1,700,025.00",22,"77,274.00"
+Other,Other,"1,532,000.00",14,"109,429.00"
+Entertainment,Lifestyle,"1,363,000.00",10,"136,300.00"
+Clothing,Living,"907,000.00",7,"129,571.00"
+Shopping,Lifestyle,"889,000.00",8,"111,125.00"
+Restaurants & Bars,Lifestyle,"831,100.00",8,"103,888.00"
+Savings,Financial,"756,000.00",18,"42,000.00"
+Gifts,Giving & Family,"627,000.00",5,"125,400.00"
+Pets,Living,"540,700.00",6,"90,117.00"
+Bank Charges,Financial,"488,029.00",32,"15,251.00"
+Investments,Financial,"330,500.00",13,"25,423.00"
+Education,Work & Business,"306,000.00",4,"76,500.00"
+
