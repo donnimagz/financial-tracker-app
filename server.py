@@ -593,13 +593,16 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             self._send_json({"error": "Message cannot be empty"}, status=400)
             return
 
-        # Prepare SSE headers
+        # Prepare SSE headers (unbuffered, close on completion)
         self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream")
-        self.send_header("Cache-Control", "no-cache")
-        self.send_header("Connection", "keep-alive")
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache, no-transform")
+        self.send_header("Connection", "close")
+        self.send_header("X-Accel-Buffering", "no")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
+
+        self.close_connection = True
 
         try:
             for sse_event in generate_chat_stream(message, history):

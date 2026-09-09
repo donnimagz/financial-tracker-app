@@ -328,7 +328,7 @@ def generate_chat_stream(query, history=None):
     if use_online:
         yield f"data: {json.dumps({'type': 'THOUGHT', 'content': 'Connecting to Gemini model for contextual reasoning...'})}\n\n"
         
-        # Prepare context from current database state
+        # Prepare rich context from current database state
         conn = get_db()
         cur = conn.cursor()
         cur.execute("SELECT MIN(date), MAX(date), COUNT(*) FROM transactions")
@@ -337,12 +337,23 @@ def generate_chat_stream(query, history=None):
         tot_exp = cur.fetchone()[0] or 0
         cur.execute("SELECT sum(amount) FROM transactions WHERE type='Income' AND flag != 'transfer-between-own-accounts'")
         tot_inc = cur.fetchone()[0] or 0
+
+        # Top 10 categories
+        cur.execute("SELECT subcategory, total_spent, percent_spend FROM categories ORDER BY total_spent DESC LIMIT 10")
+        top_cats_summary = ", ".join(f"{r['subcategory']}: {r['total_spent']:,.0f} UGX ({r['percent_spend']}%)" for r in cur.fetchall())
+
+        # Top recurring expenses
+        cur.execute("SELECT item, est_monthly_equiv FROM recurring_expenses ORDER BY est_monthly_equiv DESC LIMIT 5")
+        top_rec_summary = ", ".join(f"{r['item']}: {r['est_monthly_equiv']:,.0f} UGX/mo" for r in cur.fetchall())
+
         conn.close()
         
-        system_context = f"""Context: Personal financial ledger from {min_d} to {max_d}.
-Total transactions: {cnt:,}. Total income: UGX {tot_inc:,.2f}. Total expense: UGX {tot_exp:,.2f}. Currency: UGX."""
+        system_context = f"""Context: Personal financial ledger in Uganda (UGX) from {min_d} to {max_d}.
+Total transactions: {cnt:,}. Total income: UGX {tot_inc:,.2f}. Total expense: UGX {tot_exp:,.2f}.
+Top categories: {top_cats_summary}.
+Key recurring commitments: {top_rec_summary}."""
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
         ctx = ssl.create_default_context()
         try:
             import certifi

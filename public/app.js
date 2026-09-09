@@ -1316,19 +1316,20 @@ async function handleChatSubmit(e) {
 async function sendChatMessage(text) {
   if (state.isChatLoading) return;
   state.isChatLoading = true;
-  document.getElementById('chatSendBtn').disabled = true;
+  const sendBtn = document.getElementById('chatSendBtn');
+  if (sendBtn) sendBtn.disabled = true;
 
   // Add User Message
   state.chatMessages.push({ role: 'user', content: text });
   
   // Add placeholder Model Message
-  const nextIdx = state.chatMessages.length;
-  state.chatMessages.push({
+  const modelMsg = {
     role: 'model',
     content: '',
     thoughts: '',
     suggestions: []
-  });
+  };
+  state.chatMessages.push(modelMsg);
   renderChatMessages();
 
   try {
@@ -1341,11 +1342,17 @@ async function sendChatMessage(text) {
       })
     });
 
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error || `HTTP ${response.status}`);
+    }
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let streamDone = false;
 
-    while (true) {
+    while (!streamDone) {
       const { value, done } = await reader.read();
       if (done) break;
 
@@ -1354,39 +1361,49 @@ async function sendChatMessage(text) {
       buffer = lines.pop(); // keep incomplete fragment
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const dataStr = line.replace('data: ', '').trim();
-          if (dataStr === '[DONE]') break;
-          if (dataStr) {
-            try {
-              const parsed = JSON.parse(dataStr);
-              const target = state.chatMessages[nextIdx];
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data: ')) continue;
+        const dataStr = trimmed.slice(6).trim();
 
-              if (parsed.type === 'THOUGHT') {
-                target.thoughts = (target.thoughts ? target.thoughts + '\n' : '') + parsed.content;
-              } else if (parsed.type === 'SUGGESTION') {
-                if (!target.suggestions.includes(parsed.content)) {
-                  target.suggestions.push(parsed.content);
-                }
-              } else if (parsed.type === 'FINAL_RESPONSE') {
-                target.content += parsed.content;
+        if (dataStr === '[DONE]') {
+          streamDone = true;
+          break;
+        }
+
+        if (dataStr) {
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (parsed.type === 'THOUGHT') {
+              modelMsg.thoughts = (modelMsg.thoughts ? modelMsg.thoughts + '\n' : '') + parsed.content;
+            } else if (parsed.type === 'SUGGESTION') {
+              if (!modelMsg.suggestions.includes(parsed.content)) {
+                modelMsg.suggestions.push(parsed.content);
               }
-
-              renderChatMessages();
-            } catch (err) {
-              // json parse incomplete chunk
+            } else if (parsed.type === 'FINAL_RESPONSE') {
+              modelMsg.content += parsed.content;
             }
+            renderChatMessages();
+          } catch (err) {
+            // incomplete JSON chunk
           }
         }
       }
     }
+
+    try { await reader.cancel(); } catch (e) {}
+
+    // Provide default fallback if response was empty
+    if (!modelMsg.content && !modelMsg.thoughts) {
+      modelMsg.content = "I couldn't find specific data for that request. Try asking about categories, recurring expenses, or account balances!";
+      renderChatMessages();
+    }
   } catch (err) {
     console.error('Chat error:', err);
-    state.chatMessages[nextIdx].content = '⚠️ Error streaming response from server. Please check connection.';
+    modelMsg.content = `⚠️ Unable to complete AI analysis (${err.message || 'connection error'}). Please try again.`;
     renderChatMessages();
   } finally {
     state.isChatLoading = false;
-    document.getElementById('chatSendBtn').disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
   }
 }
 
