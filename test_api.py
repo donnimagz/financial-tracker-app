@@ -26,17 +26,17 @@ class TestFinanceApp(unittest.TestCase):
         cur = self.conn.cursor()
         cur.execute("SELECT COUNT(*) FROM transactions")
         tx_count = cur.fetchone()[0]
-        self.assertEqual(tx_count, 4221, "Total transactions must be exactly 4221")
+        self.assertEqual(tx_count, 4230, "Total transactions must be exactly 4230")
 
-        # Full ledger expense benchmark: 218,427,499.00 UGX
+        # Full ledger expense benchmark: 218,797,199.00 UGX
         cur.execute("SELECT SUM(amount) FROM transactions WHERE type='Expense' AND flag != 'transfer-between-own-accounts'")
         full_exp = cur.fetchone()[0]
-        self.assertAlmostEqual(full_exp, 218427499.0, delta=1.0, msg="Full ledger expenditure mismatch")
+        self.assertAlmostEqual(full_exp, 218797199.0, delta=1.0, msg="Full ledger expenditure mismatch")
 
-        # Core window expense benchmark: 203,994,619.00 UGX
+        # Core window expense benchmark: 204,364,319.00 UGX
         cur.execute("SELECT SUM(amount) FROM transactions WHERE type='Expense' AND date >= '2022-03-01' AND flag != 'transfer-between-own-accounts'")
         core_exp = cur.fetchone()[0]
-        self.assertAlmostEqual(core_exp, 203994619.0, delta=1.0, msg="Core window expenditure mismatch")
+        self.assertAlmostEqual(core_exp, 204364319.0, delta=1.0, msg="Core window expenditure mismatch")
 
     def test_categories_aggregation(self):
         """Verify categories table has correct data."""
@@ -146,14 +146,14 @@ class TestFinanceApp(unittest.TestCase):
         self.assertIn("200 OK", status)
         stats = json.loads(body)
         self.assertEqual(stats["window"], "core")
-        self.assertAlmostEqual(stats["expenditure"], 203994619.0, delta=1.0)
+        self.assertAlmostEqual(stats["expenditure"], 204364319.0, delta=1.0)
 
         # 5. Test /api/transactions
         status, body = call_handler(f"GET /api/transactions?limit=2 HTTP/1.1\r\nHost: localhost\r\n{auth_header}\r\n")
         self.assertIn("200 OK", status)
         txs = json.loads(body)
         self.assertEqual(len(txs["data"]), 2)
-        self.assertEqual(txs["total"], 4221)
+        self.assertEqual(txs["total"], 4230)
 
         # 6. Test /api/categories
         status, body = call_handler(f"GET /api/categories HTTP/1.1\r\nHost: localhost\r\n{auth_header}\r\n")
@@ -251,7 +251,7 @@ class TestFinanceApp(unittest.TestCase):
         res2 = req2.resp.getvalue().decode()
         self.assertIn("200 OK", res2)
         stats = json.loads(res2.split("\r\n\r\n")[1])
-        self.assertEqual(stats["transaction_count"], 3679)
+        self.assertEqual(stats["transaction_count"], 3688)
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,10 +1,10 @@
 {
-  "total_transactions": 4221,
-  "full_expenditure": 218427499.0,
-  "core_expenditure": 203994619.0,
+  "total_transactions": 4230,
+  "full_expenditure": 218797199.0,
+  "core_expenditure": 204364319.0,
   "review_count": 541,
   "date_range": {
     "min": "2020-08-05",
-    "max": "2026-09-07"
+    "max": "2026-09-10"
   }
 }
