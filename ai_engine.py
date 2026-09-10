@@ -15,7 +15,34 @@ import urllib.error
 import ssl
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "finance.db")
+
+def resolve_db_path():
+    if os.environ.get("VERCEL"):
+        tmp_db = "/tmp/finance.db"
+        if os.path.exists(tmp_db) and os.path.getsize(tmp_db) > 0:
+            return tmp_db
+    
+    candidates = [
+        os.path.join(BASE_DIR, "finance.db"),
+        os.path.join(os.getcwd(), "finance.db"),
+        os.path.abspath("finance.db"),
+        os.path.join(os.path.dirname(BASE_DIR), "finance.db"),
+        "/var/task/finance.db"
+    ]
+    for p in candidates:
+        if os.path.exists(p) and os.path.getsize(p) > 0:
+            if os.environ.get("VERCEL"):
+                tmp_db = "/tmp/finance.db"
+                try:
+                    import shutil
+                    shutil.copyfile(p, tmp_db)
+                    return tmp_db
+                except Exception:
+                    return p
+            return p
+    return os.path.join(BASE_DIR, "finance.db")
+
+DB_PATH = resolve_db_path()
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)

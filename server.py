@@ -9,17 +9,58 @@ import sys
 import json
 import sqlite3
 import urllib.parse
+import hashlib
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from ai_engine import generate_chat_stream
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "finance.db")
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
+
+def resolve_db_path():
+    if os.environ.get("VERCEL"):
+        tmp_db = "/tmp/finance.db"
+        if os.path.exists(tmp_db) and os.path.getsize(tmp_db) > 0:
+            return tmp_db
+    
+    candidates = [
+        os.path.join(BASE_DIR, "finance.db"),
+        os.path.join(os.getcwd(), "finance.db"),
+        os.path.abspath("finance.db"),
+        os.path.join(os.path.dirname(BASE_DIR), "finance.db"),
+        "/var/task/finance.db"
+    ]
+    for p in candidates:
+        if os.path.exists(p) and os.path.getsize(p) > 0:
+            if os.environ.get("VERCEL"):
+                tmp_db = "/tmp/finance.db"
+                try:
+                    import shutil
+                    shutil.copyfile(p, tmp_db)
+                    return tmp_db
+                except Exception as e:
+                    print(f"Failed to copy db to /tmp: {e}", file=sys.stderr)
+                    return p
+            return p
+    return os.path.join(BASE_DIR, "finance.db")
+
+DB_PATH = resolve_db_path()
 
 # Authentication / Passcode Lock Configuration
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "2026")
 VALID_SESSIONS = set()
+
+def get_session_token():
+    return hashlib.sha256(f"finance-tracker-token-salt:{APP_PASSWORD}".encode("utf-8")).hexdigest()
+
+def is_valid_token(token):
+    if not token:
+        return False
+    if token in VALID_SESSIONS:
+        return True
+    if APP_PASSWORD and token == get_session_token():
+        return True
+    return False
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -34,7 +75,7 @@ def is_authenticated(headers, query=None):
     auth_header = headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1].strip()
-        if token in VALID_SESSIONS:
+        if is_valid_token(token):
             return True
 
     # 2. Cookie header
@@ -42,13 +83,13 @@ def is_authenticated(headers, query=None):
     for part in cookie_header.split(";"):
         if "=" in part:
             k, v = part.strip().split("=", 1)
-            if k == "finance_token" and v in VALID_SESSIONS:
+            if k == "finance_token" and is_valid_token(v):
                 return True
 
     # 3. Query string token (for EventSource SSE)
     if query and "token" in query:
         token = query["token"][0]
-        if token in VALID_SESSIONS:
+        if is_valid_token(token):
             return True
 
     return False
@@ -58,8 +99,29 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     allow_reuse_address = True
 
 class FinanceAPIHandler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=PUBLIC_DIR, **kwargs)
+    def __init__(self, *args, directory=None, **kwargs):
+        if directory is None:
+            directory = PUBLIC_DIR
+        super().__init__(*args, directory=directory, **kwargs)
+
+    def _parse_request_path(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
+
+        # 1. Vercel rewrite with __route__ parameter
+        if "__route__" in query:
+            route_val = query.pop("__route__")[0]
+            path = "/api/" + route_val.lstrip("/")
+        elif path in ("/api", "/api/", "/api/index.py"):
+            # 2. Vercel / reverse-proxy header routing
+            for h in ("x-matched-path", "x-forwarded-uri", "x-original-uri", "x-rewrite-url"):
+                val = self.headers.get(h)
+                if val and val.startswith("/api/"):
+                    path = urllib.parse.urlparse(val).path
+                    break
+
+        return path, query
 
     def serve_file(self, filepath, content_type):
         if not os.path.exists(filepath):
@@ -94,9 +156,7 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
-        query = urllib.parse.parse_qs(parsed.query)
+        path, query = self._parse_request_path()
 
         if path.startswith("/api/"):
             # Public auth check endpoint
@@ -149,8 +209,7 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
-        parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
+        path, query = self._parse_request_path()
         content_len = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_len) if content_len > 0 else b"{}"
 
@@ -163,7 +222,7 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         if path == "/api/auth/login":
             entered_pass = body.get("password", "")
             if entered_pass == APP_PASSWORD:
-                token = os.urandom(24).hex()
+                token = get_session_token()
                 VALID_SESSIONS.add(token)
                 self._send_json({"status": "ok", "token": token})
             else:
@@ -179,7 +238,6 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             return
 
         # Require authentication for protected POST actions
-        query = urllib.parse.parse_qs(parsed.query)
         if not is_authenticated(self.headers, query):
             self._send_json({"error": "Unauthorized. Passcode required."}, status=401)
             return
@@ -199,9 +257,7 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         self._send_json({"error": "Endpoint not found"}, status=404)
 
     def do_PUT(self):
-        parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
-        query = urllib.parse.parse_qs(parsed.query)
+        path, query = self._parse_request_path()
         if not is_authenticated(self.headers, query):
             self._send_json({"error": "Unauthorized. Passcode required."}, status=401)
             return

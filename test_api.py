@@ -221,5 +221,37 @@ class TestFinanceApp(unittest.TestCase):
         cur.execute("DELETE FROM transactions WHERE id = ?", [new_id])
         self.conn.commit()
 
+    def test_vercel_serverless_handler(self):
+        """Verify Vercel serverless entry point api/index.py handles routing via __route__ query param."""
+        from api.index import handler
+        import io
+
+        class MockReq:
+            def __init__(self, raw_bytes):
+                self.raw = raw_bytes
+                self.resp = io.BytesIO()
+            def makefile(self, mode, *args, **kwargs):
+                if "r" in mode:
+                    return io.BytesIO(self.raw)
+                return self.resp
+            def sendall(self, data):
+                self.resp.write(data)
+
+        # 1. Login
+        login_data = json.dumps({"password": "2026"}).encode("utf-8")
+        req1 = MockReq(b"POST /api/index.py?__route__=auth/login HTTP/1.1\r\nContent-Length: " + str(len(login_data)).encode() + b"\r\n\r\n" + login_data)
+        h1 = handler(req1, ("127.0.0.1", 12345), None)
+        res1 = req1.resp.getvalue().decode()
+        self.assertIn("200 OK", res1)
+        token = json.loads(res1.split("\r\n\r\n")[1])["token"]
+
+        # 2. Authenticated stats call via Vercel route
+        req2 = MockReq(f"GET /api/index.py?__route__=stats&window=core HTTP/1.1\r\nAuthorization: Bearer {token}\r\n\r\n".encode("utf-8"))
+        h2 = handler(req2, ("127.0.0.1", 12345), None)
+        res2 = req2.resp.getvalue().decode()
+        self.assertIn("200 OK", res2)
+        stats = json.loads(res2.split("\r\n\r\n")[1])
+        self.assertEqual(stats["transaction_count"], 3679)
+
 if __name__ == "__main__":
     unittest.main()
