@@ -311,9 +311,9 @@ def seed():
     review_count = cur.fetchone()[0]
 
     print("\n--- Integrity Verification ---")
-    print(f"Total Transactions: {tx_count} (Expected: 4230)")
-    print(f"Full Ledger Expense: UGX {full_exp:,.2f} (Expected: 218,797,199.00)")
-    print(f"Core Window Expense: UGX {core_exp:,.2f} (Expected: 204,364,319.00)")
+    print(f"Total Transactions: {tx_count} (Expected: 4232)")
+    print(f"Full Ledger Expense: UGX {full_exp:,.2f} (Expected: 218,823,699.00)")
+    print(f"Core Window Expense: UGX {core_exp:,.2f} (Expected: 204,390,819.00)")
     print(f"Pending Review Items: {review_count} (Expected: 541)")
 
     # Save a static JSON bundle for instant front-end hydration
