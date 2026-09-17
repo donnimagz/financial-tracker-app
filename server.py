@@ -61,7 +61,7 @@ def is_valid_token(token):
         return False
     if token in VALID_SESSIONS:
         return True
-    if APP_PASSWORD and token == get_session_token():
+    if APP_PASSWORD and (token == APP_PASSWORD or token == get_session_token()):
         return True
     return False
 
