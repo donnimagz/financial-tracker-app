@@ -76,6 +76,14 @@
           <span class="hidden sm:inline">Add Transaction</span>
         </button>
 
+        <!-- Import CSV Button -->
+        <button onclick="openImportModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors shadow-sm" title="Import Pennyworth or Google Sheets CSV">
+          <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span class="hidden sm:inline">Import CSV</span>
+        </button>
+
         <!-- Lock / Sign Out Button -->
         <button id="lockAppBtn" onclick="lockApp()" class="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Lock Ledger">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -816,6 +824,95 @@
           <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-md transition-colors">Create Transaction</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- IMPORT CSV MODAL                               -->
+  <!-- ============================================== -->
+  <div id="importModalBackdrop" class="modal-backdrop">
+    <div class="modal-dialog p-6 max-w-lg w-full">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-zinc-900 dark:text-zinc-100">Import Transactions</h3>
+            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Pennyworth iOS export or Google Sheets CSV</p>
+          </div>
+        </div>
+        <button onclick="closeImportModal()" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-4">
+        <!-- Tab Selector -->
+        <div class="flex rounded-lg bg-zinc-100 dark:bg-zinc-800 p-1 text-xs">
+          <button id="importTabFile" onclick="setImportTab('file')" class="flex-1 py-1.5 rounded-md font-medium bg-white dark:bg-zinc-900 shadow-sm text-zinc-900 dark:text-zinc-100 transition-all">Upload File</button>
+          <button id="importTabPaste" onclick="setImportTab('paste')" class="flex-1 py-1.5 rounded-md font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all">Paste CSV</button>
+        </div>
+
+        <!-- File Upload Section -->
+        <div id="importFileSection">
+          <div id="dropZone" onclick="document.getElementById('importFileInput').click()" class="border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-blue-500 dark:hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition-colors bg-zinc-50/50 dark:bg-zinc-900/30">
+            <svg class="w-8 h-8 mx-auto text-zinc-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">Click or drag & drop Pennyworth CSV</p>
+            <p class="text-[11px] text-zinc-400 mt-1">Accepts .csv with UUIDs or standard tracker format</p>
+            <input type="file" id="importFileInput" accept=".csv" class="hidden" onchange="handleFileSelected(event)" />
+            <div id="selectedFileName" class="hidden mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-xs font-mono"></div>
+          </div>
+        </div>
+
+        <!-- Paste Text Section -->
+        <div id="importPasteSection" class="hidden">
+          <textarea id="importCsvTextarea" rows="6" oninput="handlePasteInput()" placeholder="Paste raw CSV lines here (e.g. Date,Category,Amount,Memo,UUID...)" class="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 text-zinc-800 dark:text-zinc-200"></textarea>
+        </div>
+
+        <!-- Pre-import Status Preview -->
+        <div id="importPreview" class="hidden p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-xs space-y-1.5">
+          <div class="flex items-center justify-between font-medium">
+            <span class="text-zinc-600 dark:text-zinc-400">Analysis Preview</span>
+            <span id="previewStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Ready</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center pt-1">
+            <div class="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+              <div id="previewTotalRows" class="text-base font-mono font-bold text-zinc-900 dark:text-zinc-100">0</div>
+              <div class="text-[10px] text-zinc-500">Total Rows</div>
+            </div>
+            <div class="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+              <div id="previewNewCount" class="text-base font-mono font-bold text-emerald-600 dark:text-emerald-400">0</div>
+              <div class="text-[10px] text-zinc-500">New Items</div>
+            </div>
+            <div class="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+              <div id="previewDupCount" class="text-base font-mono font-bold text-zinc-500">0</div>
+              <div class="text-[10px] text-zinc-500">Duplicates</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result message banner -->
+        <div id="importResultBanner" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800">
+          <label class="inline-flex items-center gap-2 text-xs text-zinc-500 cursor-pointer">
+            <input type="checkbox" id="importGitPush" class="rounded border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500">
+            <span>Commit & deploy to Git</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="closeImportModal()" class="px-3.5 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">Cancel</button>
+            <button type="button" id="confirmImportBtn" onclick="executeImport()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-md transition-colors disabled:opacity-50">
+              Import Transactions
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

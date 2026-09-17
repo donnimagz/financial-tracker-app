@@ -1,0 +1,64 @@
+name: Daily Ledger Sync & Automated Deploy
+
+on:
+  schedule:
+    # Runs at 21:00 UTC every day (00:00 EAT midnight in Kampala/Uganda)
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+    inputs:
+      sheet_url:
+        description: 'Optional Google Sheets CSV Export URL or Custom URL'
+        required: false
+        default: ''
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Tracker Integrity Check
+        run: |
+          python3 test_api.py
+
+      - name: Sync from Data Source
+        env:
+          GOOGLE_SHEET_URL: ${{ secrets.GOOGLE_SHEET_URL || inputs.sheet_url }}
+        run: |
+          if [ -n "$GOOGLE_SHEET_URL" ]; then
+            echo "Syncing latest transactions from Google Sheet..."
+            python3 sync_engine.py --url "$GOOGLE_SHEET_URL"
+          else
+            echo "No external sheet URL configured; verifying database integrity..."
+            python3 sync_engine.py --file data/transactions.csv --dry-run
+          fi
+
+      - name: Run Test Suite Post-Sync
+        run: |
+          python3 test_api.py
+
+      - name: Commit and Push if Changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if [[ -n $(git status -s finance.db data/) ]]; then
+            git add finance.db data/
+            git commit -m "Auto-sync: Daily ledger update $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
+            git push origin main
+            echo "Changes pushed to main - Render and Vercel auto-deploys triggered."
+          else
+            echo "Ledger is already up to date. No new records to commit."
+          fi

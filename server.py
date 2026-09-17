@@ -10,11 +10,14 @@ import json
 import sqlite3
 import urllib.parse
 import hashlib
+from datetime import datetime
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from ai_engine import generate_chat_stream
+import sync_engine
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 
 def resolve_db_path():
@@ -189,6 +192,8 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
                     self.handle_get_needs_review(query)
                 elif path == "/api/filter-options":
                     self.handle_get_filter_options()
+                elif path == "/api/sync/status":
+                    self.handle_get_sync_status()
                 else:
                     self._send_json({"error": "Endpoint not found"}, status=404)
             except Exception as e:
@@ -248,6 +253,14 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
 
         if path == "/api/transactions":
             self.handle_create_transaction(body)
+            return
+
+        if path == "/api/transactions/quick":
+            self.handle_quick_transaction(body)
+            return
+
+        if path == "/api/import":
+            self.handle_import_transactions(post_data, body, query)
             return
 
         if path == "/api/batch-review":
@@ -670,6 +683,117 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             err_data = json.dumps({"type": "FINAL_RESPONSE", "content": f"\n\n**Error**: {str(e)}"})
             self.wfile.write(f"data: {err_data}\n\ndata: [DONE]\n\n".encode("utf-8"))
             self.wfile.flush()
+
+    def handle_get_sync_status(self):
+        meta_path = os.path.join(DATA_DIR, "meta.json")
+        meta = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+            except Exception:
+                pass
+        
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM transactions")
+        total_tx = cur.fetchone()[0]
+        cur.execute("SELECT MIN(date), MAX(date) FROM transactions")
+        min_d, max_d = cur.fetchone()
+        cur.execute("SELECT COUNT(*) FROM transactions WHERE flag != '' AND is_review_resolved = 0")
+        pending_review = cur.fetchone()[0]
+        conn.close()
+        
+        self._send_json({
+            "status": "healthy",
+            "total_transactions": total_tx,
+            "date_range": {"min": min_d, "max": max_d},
+            "pending_review_count": pending_review,
+            "meta": meta,
+            "db_path": DB_PATH
+        })
+
+    def handle_import_transactions(self, raw_post_data, body, query):
+        dry_run = query.get("dry_run", ["false"])[0].lower() in ("true", "1") or body.get("dry_run", False)
+        git_push = query.get("git_push", ["false"])[0].lower() in ("true", "1") or body.get("git_push", False)
+        
+        csv_text = ""
+        # 1. Check if JSON body with csv_data or csv
+        if isinstance(body, dict) and (body.get("csv_data") or body.get("csv")):
+            csv_text = body.get("csv_data") or body.get("csv")
+        # 2. Check Content-Type header
+        content_type = self.headers.get("Content-Type", "")
+        if not csv_text and ("text/csv" in content_type or "text/plain" in content_type):
+            csv_text = raw_post_data.decode("utf-8", errors="replace")
+        # 3. If multipart/form-data
+        if not csv_text and "multipart/form-data" in content_type:
+            raw_str = raw_post_data.decode("utf-8", errors="replace")
+            lines = raw_str.splitlines()
+            start = False
+            content_lines = []
+            for line in lines:
+                if start:
+                    if line.startswith("------"):
+                        break
+                    content_lines.append(line)
+                elif not line.strip() and not start:
+                    start = True
+            csv_text = "\n".join(content_lines)
+        # 4. Fallback: if raw body starts with common CSV header or text
+        if not csv_text and raw_post_data:
+            try:
+                candidate = raw_post_data.decode("utf-8", errors="replace").strip()
+                if "Date" in candidate or "UUID" in candidate or "Amount" in candidate:
+                    csv_text = candidate
+            except Exception:
+                pass
+
+        if not csv_text or not csv_text.strip():
+            self._send_json({"error": "No CSV content provided. Provide 'csv_data' in JSON or raw CSV payload."}, status=400)
+            return
+
+        try:
+            result = sync_engine.sync_from_csv_text(csv_text, git_push=git_push, dry_run=dry_run)
+            self._send_json(result)
+        except Exception as e:
+            self._send_json({"error": f"Import failed: {str(e)}"}, status=500)
+
+    def handle_quick_transaction(self, body):
+        raw_date = body.get("date", "")
+        norm_date = sync_engine.normalize_date(raw_date)
+        tx_type = body.get("type", "Expense").capitalize()
+        amount = sync_engine.parse_num(body.get("amount", 0))
+        cat = body.get("category", "General").strip()
+        account = body.get("account", "Mobile Money").strip() or "Mobile Money"
+        desc = body.get("description", "").strip() or cat
+        notes = body.get("notes", "").strip()
+        
+        g, sub, _ = sync_engine.PENNYWORTH_CATEGORY_MAP.get(cat, ("Other", cat, tx_type))
+        record = {
+            "date": norm_date,
+            "time": datetime.now().strftime("%H:%M:%S"),
+            "description": desc,
+            "merchant": body.get("merchant", "").strip(),
+            "type": tx_type,
+            "amount": amount,
+            "currency": body.get("currency", "UGX").strip() or "UGX",
+            "account": account,
+            "method": account,
+            "group_name": g,
+            "category": cat,
+            "subcategory": sub,
+            "personal_or_business": "Personal",
+            "recurring": "",
+            "source": "quick_api",
+            "source_line": "",
+            "confidence": "high",
+            "notes": notes,
+            "flag": "",
+            "tx_id": body.get("tx_id", f"quick-{datetime.now().strftime('%Y%m%d%H%M%S')}-{os.urandom(3).hex()}"),
+            "is_review_resolved": 0
+        }
+        res = sync_engine.ingest_records([record])
+        self._send_json(res)
 
 def run_server(port=8000):
     server_address = ("", port)

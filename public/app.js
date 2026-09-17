@@ -1487,6 +1487,166 @@ function renderChatMessages() {
 }
 
 // Dynamic textarea height adjustment
+// --- Import CSV Modal & Processing ---
+let currentImportCsvText = '';
+
+function openImportModal() {
+  currentImportCsvText = '';
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importCsvTextarea').value = '';
+  document.getElementById('selectedFileName').classList.add('hidden');
+  document.getElementById('importPreview').classList.add('hidden');
+  document.getElementById('importResultBanner').classList.add('hidden');
+  document.getElementById('confirmImportBtn').disabled = true;
+  setImportTab('file');
+  document.getElementById('importModalBackdrop').classList.add('open');
+}
+
+function closeImportModal() {
+  document.getElementById('importModalBackdrop').classList.remove('open');
+}
+
+function setImportTab(tab) {
+  const fileTab = document.getElementById('importTabFile');
+  const pasteTab = document.getElementById('importTabPaste');
+  const fileSec = document.getElementById('importFileSection');
+  const pasteSec = document.getElementById('importPasteSection');
+
+  if (tab === 'file') {
+    fileTab.className = 'flex-1 py-1.5 rounded-md font-medium bg-white dark:bg-zinc-900 shadow-sm text-zinc-900 dark:text-zinc-100 transition-all';
+    pasteTab.className = 'flex-1 py-1.5 rounded-md font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all';
+    fileSec.classList.remove('hidden');
+    pasteSec.classList.add('hidden');
+  } else {
+    pasteTab.className = 'flex-1 py-1.5 rounded-md font-medium bg-white dark:bg-zinc-900 shadow-sm text-zinc-900 dark:text-zinc-100 transition-all';
+    fileTab.className = 'flex-1 py-1.5 rounded-md font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all';
+    pasteSec.classList.remove('hidden');
+    fileSec.classList.add('hidden');
+    document.getElementById('importCsvTextarea')?.focus();
+  }
+}
+
+function handleFileSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const fnBadge = document.getElementById('selectedFileName');
+  fnBadge.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+  fnBadge.classList.remove('hidden');
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    currentImportCsvText = e.target.result;
+    runDryRunAnalysis(currentImportCsvText);
+  };
+  reader.readAsText(file);
+}
+
+function handlePasteInput() {
+  currentImportCsvText = document.getElementById('importCsvTextarea').value;
+  if (currentImportCsvText.trim().length > 10) {
+    runDryRunAnalysis(currentImportCsvText);
+  } else {
+    document.getElementById('importPreview').classList.add('hidden');
+    document.getElementById('confirmImportBtn').disabled = true;
+  }
+}
+
+async function runDryRunAnalysis(csvText) {
+  const previewDiv = document.getElementById('importPreview');
+  const confirmBtn = document.getElementById('confirmImportBtn');
+  const badge = document.getElementById('previewStatusBadge');
+
+  badge.textContent = 'Analyzing...';
+  badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
+  previewDiv.classList.remove('hidden');
+
+  try {
+    const res = await authFetch('/api/import?dry_run=true', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: csvText
+    });
+    const data = await res.json();
+    if (data.success) {
+      const total = (data.new_count || 0) + (data.duplicate_count || 0);
+      document.getElementById('previewTotalRows').textContent = total;
+      document.getElementById('previewNewCount').textContent = data.new_count || 0;
+      document.getElementById('previewDupCount').textContent = data.duplicate_count || 0;
+
+      badge.textContent = `${data.new_count} new to import`;
+      badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300';
+      confirmBtn.disabled = false;
+    } else {
+      badge.textContent = 'Format error';
+      badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300';
+      confirmBtn.disabled = true;
+    }
+  } catch (err) {
+    badge.textContent = 'Check failed';
+    console.error('Dry-run check failed:', err);
+  }
+}
+
+async function executeImport() {
+  if (!currentImportCsvText || !currentImportCsvText.trim()) return;
+
+  const confirmBtn = document.getElementById('confirmImportBtn');
+  const banner = document.getElementById('importResultBanner');
+  const gitPush = document.getElementById('importGitPush').checked;
+
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = `
+    <svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-white inline" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    Importing...
+  `;
+
+  try {
+    const url = `/api/import${gitPush ? '?git_push=true' : ''}`;
+    const res = await authFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: currentImportCsvText
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      banner.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 block';
+      banner.innerHTML = `
+        <div class="font-bold mb-0.5">✅ Import Complete</div>
+        <div>${data.message || `Successfully processed. Total transactions: ${data.total_transactions}.`}</div>
+      `;
+
+      // Refresh all dashboard metrics immediately
+      loadStats();
+      loadTransactions();
+      loadMonthly();
+      loadCategories();
+      loadAccounts();
+
+      confirmBtn.textContent = 'Done!';
+      setTimeout(() => {
+        closeImportModal();
+        confirmBtn.textContent = 'Import Transactions';
+        confirmBtn.disabled = false;
+      }, 1500);
+    } else {
+      banner.className = 'p-3 rounded-xl text-xs font-medium bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 block';
+      banner.textContent = data.error || 'Import failed. Please verify CSV formatting.';
+      confirmBtn.textContent = 'Import Transactions';
+      confirmBtn.disabled = false;
+    }
+  } catch (err) {
+    banner.className = 'p-3 rounded-xl text-xs font-medium bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 block';
+    banner.textContent = `Network error: ${err.message}`;
+    confirmBtn.textContent = 'Import Transactions';
+    confirmBtn.disabled = false;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const textarea = document.getElementById('chatTextarea');
   if (textarea) {

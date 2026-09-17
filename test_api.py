@@ -217,9 +217,38 @@ class TestFinanceApp(unittest.TestCase):
         self.assertIn("[DONE]", body)
 
         # Clean up the test transaction
+        # Clean up created transaction
         cur = self.conn.cursor()
         cur.execute("DELETE FROM transactions WHERE id = ?", [new_id])
         self.conn.commit()
+
+        # 13. Test GET /api/sync/status
+        status, body = call_handler(f"GET /api/sync/status HTTP/1.1\r\nHost: localhost\r\n{auth_header}\r\n")
+        self.assertIn("200 OK", status)
+        sync_st = json.loads(body)
+        self.assertEqual(sync_st["status"], "healthy")
+        self.assertEqual(sync_st["total_transactions"], 4232)
+
+        # 14. Test POST /api/import unauthorized (no auth header)
+        status, body = call_handler("POST /api/import HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn("401 Unauthorized", status)
+
+        # 15. Test POST /api/import with dry_run=true
+        test_csv = (
+            "Date,Category,Category Group,Amount,Currency,Member,Account,Tags,Memo,Income/Expenses,Last updated,UUID\n"
+            "20260914,Health,,15500,UGX,Self,Mobile Money,,Zana Delivery,Out,2026-09-14 17:52:00,A1435448-82AB-412A-89A4-99C58B536584\n"
+            "20260917,Car,,50000,UGX,Self,Mobile Money,,Fuel Refill,Out,2026-09-17 14:00:00,TEST-UUID-REF-001\n"
+        )
+        import_req = json.dumps({"csv_data": test_csv, "dry_run": True})
+        status, body = call_handler(
+            f"POST /api/import HTTP/1.1\r\nHost: localhost\r\n{auth_header}Content-Type: application/json\r\nContent-Length: {len(import_req)}\r\n\r\n{import_req}"
+        )
+        self.assertIn("200 OK", status)
+        imp_res = json.loads(body)
+        self.assertTrue(imp_res["success"])
+        self.assertTrue(imp_res["dry_run"])
+        self.assertEqual(imp_res["duplicate_count"], 1)
+        self.assertEqual(imp_res["new_count"], 1)
 
     def test_vercel_serverless_handler(self):
         """Verify Vercel serverless entry point api/index.py handles routing via __route__ query param."""
