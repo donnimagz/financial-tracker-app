@@ -10,7 +10,8 @@ import json
 import sqlite3
 import urllib.parse
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
+import calendar
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from ai_engine import generate_chat_stream
@@ -194,6 +195,8 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
                     self.handle_get_filter_options()
                 elif path == "/api/sync/status":
                     self.handle_get_sync_status()
+                elif path == "/api/daily-glance":
+                    self.handle_get_daily_glance(query)
                 else:
                     self._send_json({"error": "Endpoint not found"}, status=404)
             except Exception as e:
@@ -209,6 +212,15 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             return
         elif path == "/app.js":
             self.serve_file(os.path.join(PUBLIC_DIR, "app.js"), "application/javascript; charset=utf-8")
+            return
+        elif path == "/manifest.json":
+            self.serve_file(os.path.join(PUBLIC_DIR, "manifest.json"), "application/manifest+json; charset=utf-8")
+            return
+        elif path == "/sw.js":
+            self.serve_file(os.path.join(PUBLIC_DIR, "sw.js"), "application/javascript; charset=utf-8")
+            return
+        elif path in ("/icons/icon.svg", "/icon.svg"):
+            self.serve_file(os.path.join(PUBLIC_DIR, "icons", "icon.svg"), "image/svg+xml")
             return
 
         super().do_GET()
@@ -711,6 +723,164 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             "pending_review_count": pending_review,
             "meta": meta,
             "db_path": DB_PATH
+        })
+
+    def handle_get_daily_glance(self, query):
+        conn = get_db()
+        cur = conn.cursor()
+
+        # Find latest available date in db if not specified
+        cur.execute("SELECT MAX(date) FROM transactions")
+        max_db_date = cur.fetchone()[0] or datetime.today().strftime("%Y-%m-%d")
+
+        requested_date = query.get("date", [max_db_date])[0].strip()
+        if not requested_date:
+            requested_date = max_db_date
+
+        try:
+            target_dt = datetime.strptime(requested_date, "%Y-%m-%d")
+        except ValueError:
+            target_dt = datetime.strptime(max_db_date, "%Y-%m-%d")
+            requested_date = max_db_date
+
+        prev_dt = target_dt - timedelta(days=1)
+        prev_date = prev_dt.strftime("%Y-%m-%d")
+        current_month = requested_date[:7]
+
+        # 1. Today's stats
+        cur.execute("""
+            SELECT 
+                SUM(CASE WHEN type='Expense' AND flag != 'transfer-between-own-accounts' THEN amount ELSE 0 END) as spend,
+                SUM(CASE WHEN type='Income' AND flag != 'transfer-between-own-accounts' THEN amount ELSE 0 END) as income,
+                COUNT(*) as tx_count
+            FROM transactions
+            WHERE date = ?
+        """, (requested_date,))
+        today_row = cur.fetchone()
+        today_spend = (today_row['spend'] or 0.0) if today_row else 0.0
+        today_income = (today_row['income'] or 0.0) if today_row else 0.0
+        today_count = (today_row['tx_count'] or 0) if today_row else 0
+
+        # Today's transactions
+        cur.execute("""
+            SELECT id, date, time, description, amount, type, category, subcategory, account, flag
+            FROM transactions
+            WHERE date = ?
+            ORDER BY time DESC, id DESC
+        """, (requested_date,))
+        today_txs = [dict(r) for r in cur.fetchall()]
+
+        # 2. Yesterday's stats
+        cur.execute("""
+            SELECT 
+                SUM(CASE WHEN type='Expense' AND flag != 'transfer-between-own-accounts' THEN amount ELSE 0 END) as spend,
+                COUNT(*) as tx_count
+            FROM transactions
+            WHERE date = ?
+        """, (prev_date,))
+        prev_row = cur.fetchone()
+        prev_spend = (prev_row['spend'] or 0.0) if prev_row else 0.0
+        prev_count = (prev_row['tx_count'] or 0) if prev_row else 0
+
+        # Yesterday's transactions
+        cur.execute("""
+            SELECT id, date, time, description, amount, type, category, subcategory, account, flag
+            FROM transactions
+            WHERE date = ?
+            ORDER BY time DESC, id DESC
+        """, (prev_date,))
+        prev_txs = [dict(r) for r in cur.fetchall()]
+
+        # 3. Rolling 7 days up to target_date
+        last_7_days = []
+        for i in range(6, -1, -1):
+            day_dt = target_dt - timedelta(days=i)
+            day_str = day_dt.strftime("%Y-%m-%d")
+            day_name = day_dt.strftime("%a")
+            cur.execute("""
+                SELECT 
+                    SUM(CASE WHEN type='Expense' AND flag != 'transfer-between-own-accounts' THEN amount ELSE 0 END) as spend,
+                    SUM(CASE WHEN type='Income' AND flag != 'transfer-between-own-accounts' THEN amount ELSE 0 END) as income,
+                    COUNT(*) as tx_count
+                FROM transactions
+                WHERE date = ?
+            """, (day_str,))
+            d_row = cur.fetchone()
+            last_7_days.append({
+                "date": day_str,
+                "day_name": day_name,
+                "spend": (d_row['spend'] or 0.0) if d_row else 0.0,
+                "income": (d_row['income'] or 0.0) if d_row else 0.0,
+                "count": (d_row['tx_count'] or 0) if d_row else 0
+            })
+
+        # 4. Month to Date Pacing
+        cur.execute("""
+            SELECT 
+                SUM(CASE WHEN type='Expense' AND flag != 'transfer-between-own-accounts' THEN amount ELSE 0 END) as month_spend,
+                COUNT(DISTINCT date) as active_days,
+                COUNT(*) as month_tx_count
+            FROM transactions
+            WHERE date LIKE ? || '%'
+        """, (current_month,))
+        m_row = cur.fetchone()
+        month_spend = (m_row['month_spend'] or 0.0) if m_row else 0.0
+        active_days = max(1, (m_row['active_days'] or 1) if m_row else 1)
+        daily_avg = month_spend / active_days
+
+        year, month_num = int(current_month[:4]), int(current_month[5:7])
+        _, days_in_month = calendar.monthrange(year, month_num)
+        projected_month_total = daily_avg * days_in_month
+
+        # Top 3 subcategory spending drivers for current month
+        cur.execute("""
+            SELECT subcategory, group_name, SUM(amount) as total_spent, COUNT(*) as tx_count
+            FROM transactions
+            WHERE date LIKE ? || '%' AND type='Expense' AND flag != 'transfer-between-own-accounts' AND subcategory != ''
+            GROUP BY subcategory
+            ORDER BY total_spent DESC
+            LIMIT 3
+        """, (current_month,))
+        top_subcats = []
+        for r in cur.fetchall():
+            tot = r['total_spent'] or 0.0
+            pct = (tot / month_spend * 100.0) if month_spend > 0 else 0.0
+            top_subcats.append({
+                "subcategory": r['subcategory'],
+                "group_name": r['group_name'],
+                "total_spent": tot,
+                "percent": round(pct, 1),
+                "count": r['tx_count']
+            })
+
+        conn.close()
+
+        self._send_json({
+            "target_date": requested_date,
+            "current_month": current_month,
+            "today": {
+                "date": requested_date,
+                "spend": today_spend,
+                "income": today_income,
+                "tx_count": today_count,
+                "transactions": today_txs
+            },
+            "yesterday": {
+                "date": prev_date,
+                "spend": prev_spend,
+                "tx_count": prev_count,
+                "transactions": prev_txs
+            },
+            "last_7_days": last_7_days,
+            "month_to_date": {
+                "month": current_month,
+                "total_spend": month_spend,
+                "active_days": active_days,
+                "daily_avg": round(daily_avg, 2),
+                "days_in_month": days_in_month,
+                "projected_month_total": round(projected_month_total, 2),
+                "top_categories": top_subcats
+            }
         })
 
     def handle_import_transactions(self, raw_post_data, body, query):

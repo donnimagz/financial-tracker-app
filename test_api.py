@@ -250,6 +250,34 @@ class TestFinanceApp(unittest.TestCase):
         self.assertEqual(imp_res["duplicate_count"], 1)
         self.assertEqual(imp_res["new_count"], 1)
 
+        # 16. Test GET /api/daily-glance with auth
+        status, body = call_handler(f"GET /api/daily-glance HTTP/1.1\r\nHost: localhost\r\n{auth_header}\r\n")
+        self.assertIn("200 OK", status)
+        glance = json.loads(body)
+        self.assertIn("today", glance)
+        self.assertIn("yesterday", glance)
+        self.assertIn("last_7_days", glance)
+        self.assertIn("month_to_date", glance)
+        self.assertEqual(glance["today"]["date"], "2026-09-14")
+        self.assertEqual(glance["today"]["spend"], 15500.0)
+        self.assertEqual(len(glance["last_7_days"]), 7)
+        self.assertGreater(glance["month_to_date"]["total_spend"], 0)
+        self.assertGreater(len(glance["month_to_date"]["top_categories"]), 0)
+
+        # 17. Test static file serving /manifest.json and /sw.js (PWA assets)
+        status, body = call_handler("GET /manifest.json HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn("200 OK", status)
+        self.assertIn("Financial Tracker", body)
+        self.assertIn("standalone", body)
+
+        status, body = call_handler("GET /sw.js HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn("200 OK", status)
+        self.assertIn("CACHE_NAME", body)
+
+        status, body = call_handler("GET /icons/icon.svg HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn("200 OK", status)
+        self.assertIn("<svg", body)
+
     def test_vercel_serverless_handler(self):
         """Verify Vercel serverless entry point api/index.py handles routing via __route__ query param."""
         from api.index import handler
@@ -282,5 +310,14 @@ class TestFinanceApp(unittest.TestCase):
         stats = json.loads(res2.split("\r\n\r\n")[1])
         self.assertEqual(stats["transaction_count"], 3690)
 
+        # 3. Authenticated daily-glance call via Vercel route
+        req3 = MockReq(f"GET /api/index.py?__route__=daily-glance HTTP/1.1\r\nAuthorization: Bearer {token}\r\n\r\n".encode("utf-8"))
+        h3 = handler(req3, ("127.0.0.1", 12345), None)
+        res3 = req3.resp.getvalue().decode()
+        self.assertIn("200 OK", res3)
+        glance = json.loads(res3.split("\r\n\r\n")[1])
+        self.assertEqual(glance["today"]["spend"], 15500.0)
+
 if __name__ == "__main__":
     unittest.main()
+

@@ -324,20 +324,26 @@ function setWindowMode(mode) {
 // --- Navigation Tabs ---
 function switchTab(tabId) {
   state.activeTab = tabId;
-  const tabs = ['dashboard', 'transactions', 'analytics', 'review', 'recurring'];
+  const tabs = ['daily', 'dashboard', 'transactions', 'analytics', 'review', 'recurring'];
   tabs.forEach(t => {
     const tabEl = document.getElementById(`tab-${t}`);
+    const mobTabEl = document.getElementById(`mobTab-${t}`);
     const viewEl = document.getElementById(`view-${t}`);
     if (t === tabId) {
       tabEl?.classList.add('active');
+      mobTabEl?.classList.add('active');
       viewEl?.classList.remove('hidden');
     } else {
       tabEl?.classList.remove('active');
+      mobTabEl?.classList.remove('active');
       viewEl?.classList.add('hidden');
     }
   });
 
-  if (tabId === 'dashboard') {
+  if (tabId === 'daily') {
+    loadDailyGlance();
+    setTimeout(() => glanceSparklineChart?.resize(), 50);
+  } else if (tabId === 'dashboard') {
     setTimeout(() => {
       monthlyChart?.resize();
       categoryChart?.resize();
@@ -1148,7 +1154,8 @@ function renderRecurringTable() {
 function openTxDetail(id) {
   // Find in currently loaded sets
   const tx = (state.txData.data || []).find(t => t.id === id) ||
-             (state.reviewItems || []).find(t => t.id === id);
+             (state.reviewItems || []).find(t => t.id === id) ||
+             (state.dailyTxs || []).find(t => t.id === id);
   if (!tx) return;
 
   state.selectedTx = tx;
@@ -1647,7 +1654,325 @@ async function executeImport() {
   }
 }
 
+// --- Daily Glance (Mobile-First) Dashboard Controller ---
+let glanceSparklineChart = null;
+
+const CAT_ICONS = {
+  'Health': '💊',
+  'Medical': '💊',
+  'Hospital': '🏥',
+  'Groceries': '🛒',
+  'Food': '🍽️',
+  'Food & Dining': '🍽️',
+  'Car': '⛽',
+  'Car & Fuel': '⛽',
+  'Utilities': '💡',
+  'Phone': '📱',
+  'Communication': '📱',
+  'Socializing': '🎉',
+  'Social Activities': '🎉',
+  'Housing': '🏠',
+  'Substances': '💨',
+  'Education': '📚',
+  'Staff': '👥',
+  'Business Expenses': '💼',
+  'Gifts': '🎁',
+  'Family Support': '👨‍👩‍👧',
+  'Help': '🤝',
+  'Help & Gifts': '🤝',
+  'Bank Charges': '🏦',
+  'Transaction Fees': '🏦',
+  'Savings': '💰',
+  'Investments': '📈'
+};
+
+async function loadDailyGlance(date) {
+  try {
+    const url = date ? `/api/daily-glance?date=${date}` : '/api/daily-glance';
+    const res = await authFetch(url);
+    const data = await res.json();
+    if (!data || !data.today) return;
+
+    state.dailyGlanceData = data;
+    state.dailyTxs = (data.today.transactions || []).concat(data.yesterday.transactions || []);
+
+    // Format target date
+    const dParts = data.target_date.split('-');
+    const dtObj = new Date(parseInt(dParts[0]), parseInt(dParts[1]) - 1, parseInt(dParts[2]));
+    const dateFormatted = dtObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    
+    document.getElementById('glanceTodayFormatted').textContent = dateFormatted;
+    document.getElementById('glanceDateSubtitle').textContent = `Target: ${data.target_date} • Uganda Standard Time (EAT)`;
+
+    // Hero stats
+    const todaySpend = data.today.spend || 0;
+    document.getElementById('glanceTodaySpend').textContent = formatUGX(todaySpend);
+    document.getElementById('glanceTxCountBadge').textContent = `${data.today.tx_count || 0} Transactions`;
+
+    const yestSpend = data.yesterday.spend || 0;
+    const diff = todaySpend - yestSpend;
+    const diffSign = diff >= 0 ? '+' : '';
+    document.getElementById('glanceYesterdayCompare').innerHTML = `
+      <span>Yesterday: ${formatUGX(yestSpend)}</span>
+      <span class="ml-1 text-[11px] opacity-80">(${diffSign}${formatUGX(diff)})</span>
+    `;
+
+    // Burn rate & target badge
+    const dailyAvg = data.month_to_date.daily_avg || 0;
+    document.getElementById('glanceBurnRateText').textContent = `Daily average: ${formatUGX(dailyAvg)}`;
+
+    const paceBadge = document.getElementById('glancePaceBadge');
+    if (todaySpend === 0) {
+      paceBadge.textContent = 'No Spend Yet';
+      paceBadge.className = 'px-2.5 py-1 text-xs font-semibold rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20';
+    } else if (todaySpend <= dailyAvg * 1.1) {
+      paceBadge.textContent = 'Within Target';
+      paceBadge.className = 'px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+    } else {
+      paceBadge.textContent = 'Heavy Spending';
+      paceBadge.className = 'px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+    }
+
+    // Month Pacing
+    document.getElementById('glanceMonthName').textContent = data.month_to_date.month;
+    document.getElementById('glanceMonthSpend').textContent = formatUGX(data.month_to_date.total_spend);
+    document.getElementById('glanceProjectedText').textContent = `Projected month total: ${formatUGX(data.month_to_date.projected_month_total)}`;
+    document.getElementById('glanceDailyAvgPace').textContent = `${formatUGX(dailyAvg)} / day`;
+
+    // Top Category Drivers
+    const driversList = document.getElementById('glanceTopDriversList');
+    if (data.month_to_date.top_categories && data.month_to_date.top_categories.length > 0) {
+      driversList.innerHTML = data.month_to_date.top_categories.map(c => `
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-zinc-800 dark:text-zinc-200">${c.subcategory} <span class="text-zinc-400">(${c.count} txs)</span></span>
+            <span class="font-mono font-semibold text-zinc-900 dark:text-zinc-100">${formatUGX(c.total_spent)} (${c.percent}%)</span>
+          </div>
+          <div class="w-full h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+            <div class="h-full rounded-full bg-blue-600 dark:bg-blue-500" style="width: ${Math.min(100, c.percent)}%"></div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      driversList.innerHTML = '<p class="text-xs text-zinc-400">No category expenses this month yet.</p>';
+    }
+
+    // Render 7-Day Sparkline
+    renderGlanceSparkline(data.last_7_days || []);
+
+    // Render Activity List (Today & Yesterday)
+    renderGlanceActivity(data.today, data.yesterday);
+
+  } catch (err) {
+    console.error('Error loading daily glance data:', err);
+  }
+}
+
+function renderGlanceSparkline(days) {
+  const dom = document.getElementById('glanceSparklineChart');
+  if (!dom) return;
+  if (!glanceSparklineChart) glanceSparklineChart = echarts.init(dom);
+
+  const total7 = days.reduce((sum, d) => sum + (d.spend || 0), 0);
+  document.getElementById('glance7DayTotal').textContent = `${formatUGX(total7)} (7-day total)`;
+
+  const isDark = state.theme === 'dark';
+  const xData = days.map(d => `${d.day_name}\n${d.date.slice(5)}`);
+  const yData = days.map(d => d.spend);
+
+  const option = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const item = params[0];
+        const dayObj = days[item.dataIndex];
+        return `
+          <div class="font-bold text-xs mb-1">${dayObj.date} (${dayObj.day_name})</div>
+          <div class="text-xs text-rose-500">Outflow: ${formatUGX(dayObj.spend)}</div>
+          ${dayObj.income > 0 ? `<div class="text-xs text-emerald-500">Inflow: ${formatUGX(dayObj.income)}</div>` : ''}
+          <div class="text-[10px] text-zinc-400 mt-1">${dayObj.count} transactions</div>
+        `;
+      }
+    },
+    grid: {
+      top: 15,
+      bottom: 25,
+      left: 10,
+      right: 10,
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: xData,
+      axisLine: { lineStyle: { color: isDark ? '#27272a' : '#e4e4e7' } },
+      axisLabel: {
+        color: isDark ? '#a1a1aa' : '#71717a',
+        fontSize: 10,
+        interval: 0
+      }
+    },
+    yAxis: {
+      type: 'value',
+      show: false
+    },
+    series: [{
+      type: 'bar',
+      data: yData,
+      barWidth: '45%',
+      itemStyle: {
+        borderRadius: [6, 6, 0, 0],
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: '#3b82f6' },
+          { offset: 1, color: '#1d4ed8' }
+        ])
+      }
+    }]
+  };
+
+  glanceSparklineChart.setOption(option);
+}
+
+function renderGlanceActivity(today, yesterday) {
+  const container = document.getElementById('glanceActivityList');
+  if (!container) return;
+
+  const todayTxs = today.transactions || [];
+  const yestTxs = yesterday.transactions || [];
+
+  if (todayTxs.length === 0 && yestTxs.length === 0) {
+    container.innerHTML = '<p class="text-xs text-zinc-400 py-6 text-center">No transactions logged for today or yesterday yet.</p>';
+    return;
+  }
+
+  let html = '';
+
+  if (todayTxs.length > 0) {
+    html += `<div class="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 py-2">Today (${today.date})</div>`;
+    html += todayTxs.map(t => renderGlanceTxRow(t)).join('');
+  }
+
+  if (yestTxs.length > 0) {
+    html += `<div class="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 py-2 mt-2">Yesterday (${yesterday.date})</div>`;
+    html += yestTxs.map(t => renderGlanceTxRow(t)).join('');
+  }
+
+  container.innerHTML = html;
+}
+
+function renderGlanceTxRow(tx) {
+  const cat = tx.subcategory || tx.category || 'General';
+  const icon = CAT_ICONS[cat] || CAT_ICONS[tx.category] || '💸';
+  const isIncome = tx.type === 'Income';
+  const amtClass = isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-zinc-100';
+  const amtPrefix = isIncome ? '+' : '-';
+
+  return `
+    <div onclick="openTxDetail(${tx.id})" class="py-2.5 flex items-center justify-between cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 rounded-xl px-2 transition-colors active:scale-[0.99]">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-base">
+          ${icon}
+        </div>
+        <div>
+          <div class="text-xs font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">${tx.description || cat}</div>
+          <div class="text-[11px] text-zinc-500">${tx.time ? tx.time.slice(0, 5) + ' • ' : ''}${cat} • ${tx.account || 'Cash'}</div>
+        </div>
+      </div>
+      <div class="text-right">
+        <div class="font-mono font-bold text-xs ${amtClass}">${amtPrefix}${formatUGX(tx.amount)}</div>
+      </div>
+    </div>
+  `;
+}
+
+// --- Quick Add Bottom Sheet (Mobile-First) ---
+function openQuickAddSheet() {
+  document.getElementById('quickAmountInput').value = '';
+  document.getElementById('quickDescInput').value = '';
+  document.getElementById('quickAddSheetBackdrop').classList.add('open');
+  setTimeout(() => document.getElementById('quickAmountInput')?.focus(), 250);
+}
+
+function closeQuickAddSheet() {
+  document.getElementById('quickAddSheetBackdrop').classList.remove('open');
+}
+
+function setQuickAmount(amt) {
+  const input = document.getElementById('quickAmountInput');
+  const current = parseInt(input.value.replace(/,/g, '')) || 0;
+  input.value = (current + amt).toLocaleString();
+}
+
+function setQuickCategory(catName, btn) {
+  document.getElementById('quickCategoryInput').value = catName;
+  document.querySelectorAll('.quick-cat-btn').forEach(b => {
+    b.className = 'quick-cat-btn px-2 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-center active:scale-95 transition-all';
+  });
+  btn.className = 'quick-cat-btn px-2 py-2 rounded-xl border border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-center active:scale-95 transition-all';
+}
+
+function setQuickAccount(accName, btn) {
+  document.getElementById('quickAccountInput').value = accName;
+  document.querySelectorAll('.quick-acc-btn').forEach(b => {
+    b.className = 'quick-acc-btn flex-1 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium';
+  });
+  btn.className = 'quick-acc-btn flex-1 py-2 rounded-xl border border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-medium';
+}
+
+async function handleQuickAddSubmit(e) {
+  e.preventDefault();
+  const rawAmt = document.getElementById('quickAmountInput').value;
+  const amt = parseFloat(rawAmt.replace(/,/g, ''));
+  if (!amt || isNaN(amt)) return;
+
+  const desc = document.getElementById('quickDescInput').value.trim();
+  const cat = document.getElementById('quickCategoryInput').value;
+  const acc = document.getElementById('quickAccountInput').value;
+
+  const submitBtn = document.getElementById('quickAddSubmitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+
+  try {
+    const res = await authFetch('/api/transactions/quick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: amt,
+        description: desc || cat,
+        category: cat,
+        account: acc,
+        type: 'Expense'
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeQuickAddSheet();
+      loadDailyGlance();
+      loadStats();
+      loadTransactions();
+    } else {
+      alert(data.error || 'Failed to record expense');
+    }
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save Expense';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Register PWA Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        console.warn('SW registration failed:', err);
+      });
+    });
+  }
+
   const textarea = document.getElementById('chatTextarea');
   if (textarea) {
     textarea.addEventListener('input', () => {
@@ -1666,6 +1991,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Responsive chart resize listener
   window.addEventListener('resize', () => {
+    glanceSparklineChart?.resize();
     monthlyChart?.resize();
     categoryChart?.resize();
     analyticsBarChart?.resize();
@@ -1675,4 +2001,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize
   applyTheme(state.theme);
   checkAuth();
+
+  // Mobile or PWA Standalone Mode: Default to Daily Glance view
+  const isMobileOrPwa = window.innerWidth < 640 || window.matchMedia('(display-mode: standalone)').matches;
+  if (isMobileOrPwa) {
+    switchTab('daily');
+  } else {
+    loadDailyGlance();
+  }
 });
+

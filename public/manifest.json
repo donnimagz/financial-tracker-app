@@ -1,0 +1,40 @@
+{
+  "name": "Financial Tracker - Personal Wealth Ledger",
+  "short_name": "Daily Finance",
+  "description": "Personal financial tracking and daily cashflow analytics for Uganda (UGX)",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today's Glance",
+      "short_name": "Today",
+      "description": "View today's spending, burn rate, and recent transactions",
+      "url": "/?tab=daily"
+    },
+    {
+      "name": "Quick Add Expense",
+      "short_name": "Add Expense",
+      "description": "Log an expense immediately",
+      "url": "/?action=quickadd"
+    },
+    {
+      "name": "Import Pennyworth CSV",
+      "short_name": "Import",
+      "description": "Import transactions from CSV",
+      "url": "/?action=import"
+    }
+  ]
+}
