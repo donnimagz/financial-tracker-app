@@ -914,15 +914,20 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         rent_txs = [dict(r) for r in cur.fetchall()]
         total_rent = sum(r['amount'] for r in rent_txs)
 
+        # Focus 2: Debts (Loan repayments + outstanding medication debts)
         cur.execute("""
-            SELECT date, description, amount, account
+            SELECT date, description, amount, account, flag, notes
             FROM transactions
             WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
-              AND subcategory = 'Loans & Lending'
+              AND (subcategory = 'Loans & Lending' OR flag = 'debt-owed' OR description LIKE '%(Medication Debt)%')
             ORDER BY date DESC
         """)
         debt_txs = [dict(r) for r in cur.fetchall()]
+        repaid_txs = [r for r in debt_txs if r.get('flag') != 'debt-owed']
+        owed_txs = [r for r in debt_txs if r.get('flag') == 'debt-owed']
         total_debt = sum(r['amount'] for r in debt_txs)
+        repaid_debt = sum(r['amount'] for r in repaid_txs)
+        owed_debt = sum(r['amount'] for r in owed_txs)
 
         cur.execute("""
             SELECT date, description, amount, account, subcategory
@@ -984,7 +989,14 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             "fixed_overhead": fixed_overhead,
             "variable_spend": variable_spend,
             "rent": {"total": total_rent, "transactions": rent_txs},
-            "debts": {"total": total_debt, "transactions": debt_txs},
+            "debts": {
+                "total": total_debt,
+                "repaid": repaid_debt,
+                "owed": owed_debt,
+                "transactions": debt_txs,
+                "repaid_transactions": repaid_txs,
+                "owed_transactions": owed_txs
+            },
             "subscriptions": {"total": total_subs, "transactions": sub_txs},
             "utilities": {"total": total_utils, "transactions": util_txs},
             "months": months_data,

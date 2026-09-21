@@ -2013,6 +2013,12 @@ async function loadQ3Report() {
     if (elDebtBadge) elDebtBadge.textContent = `${debtPct}%`;
     const elDebtBar = document.getElementById('q3DebtBar');
     if (elDebtBar) elDebtBar.style.width = `${Math.min(100, parseFloat(debtPct))}%`;
+    const elDebtSubtext = document.getElementById('q3DebtSubtext');
+    if (elDebtSubtext && data.debts) {
+      elDebtSubtext.textContent = `${formatUGX(data.debts.repaid || 0, true)} repaid • ${formatUGX(data.debts.owed || 0, true)} owed`;
+    }
+    const elDebtSchedTot = document.getElementById('q3DebtScheduleTotal');
+    if (elDebtSchedTot) elDebtSchedTot.textContent = `${formatUGX(debtTot)} UGX`;
 
     const subsTot = data.subscriptions?.total || 0;
     const subsPct = total > 0 ? (subsTot / total * 100).toFixed(1) : '0.0';
@@ -2069,12 +2075,18 @@ function renderQ3ScheduleTable(elementId, transactions, amountColorClass) {
   `;
 
   transactions.forEach(tx => {
+    const isOwed = tx.flag === 'debt-owed' || (tx.description && tx.description.includes('Debt'));
+    const badge = isOwed
+      ? `<span class="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">OWED</span>`
+      : (elementId === 'q3DebtsTable' ? `<span class="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">PAID</span>` : '');
+    const amtColor = isOwed ? 'text-amber-600 dark:text-amber-400' : amountColorClass;
+
     html += `
       <tr>
         <td class="font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">${escapeHtml(tx.date || '')}</td>
-        <td class="font-medium text-zinc-900 dark:text-zinc-100">${escapeHtml(tx.description || '')}</td>
+        <td class="font-medium text-zinc-900 dark:text-zinc-100">${escapeHtml(tx.description || '')}${badge}</td>
         <td class="text-zinc-500 dark:text-zinc-400 whitespace-nowrap">${escapeHtml(tx.account || '')}</td>
-        <td class="text-right font-mono font-semibold ${amountColorClass} whitespace-nowrap">${formatUGX(tx.amount)}</td>
+        <td class="text-right font-mono font-semibold ${amtColor} whitespace-nowrap">${formatUGX(tx.amount)}</td>
       </tr>
     `;
   });

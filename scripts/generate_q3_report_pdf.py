@@ -48,16 +48,18 @@ def fetch_report_data():
     rent_txs = [dict(r) for r in cur.fetchall()]
     total_rent = sum(r['amount'] for r in rent_txs)
 
-    # Focus 2: Debts
+    # Focus 2: Debts (Loan repayments + outstanding medication debts)
     cur.execute("""
-        SELECT date, description, amount, account
+        SELECT date, description, amount, account, flag
         FROM transactions
         WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
-          AND subcategory = 'Loans & Lending'
+          AND (subcategory = 'Loans & Lending' OR flag = 'debt-owed' OR description LIKE '%(Medication Debt)%')
         ORDER BY date DESC
     """)
     debt_txs = [dict(r) for r in cur.fetchall()]
     total_debt = sum(r['amount'] for r in debt_txs)
+    repaid_debt = sum(r['amount'] for r in debt_txs if r.get('flag') != 'debt-owed')
+    owed_debt = sum(r['amount'] for r in debt_txs if r.get('flag') == 'debt-owed')
 
     # Focus 3: Subscriptions
     cur.execute("""
@@ -123,6 +125,8 @@ def fetch_report_data():
         "total_rent": total_rent,
         "rent_txs": rent_txs,
         "total_debt": total_debt,
+        "repaid_debt": repaid_debt,
+        "owed_debt": owed_debt,
         "debt_txs": debt_txs,
         "total_subs": total_subs,
         "sub_txs": sub_txs,
@@ -160,9 +164,12 @@ def generate_html(data):
     debt_rows_html = "".join([f"""
         <tr>
             <td class="font-mono text-zinc-400">{r['date']}</td>
-            <td class="font-semibold text-zinc-100">{r['description']}</td>
+            <td class="font-semibold text-zinc-100">
+                {r['description']}
+                {"<span class='ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/90 text-amber-400 border border-amber-800/60'>OWED</span>" if r.get('flag') == 'debt-owed' else "<span class='ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/90 text-emerald-400 border border-emerald-800/60'>PAID</span>"}
+            </td>
             <td class="text-zinc-400">{r['account']}</td>
-            <td class="text-right font-mono font-semibold text-rose-400">{r['amount']:,.0f} UGX</td>
+            <td class="text-right font-mono font-semibold {'text-amber-400' if r.get('flag') == 'debt-owed' else 'text-rose-400'}">{r['amount']:,.0f} UGX</td>
         </tr>
     """ for r in data["debt_txs"]])
 
@@ -308,14 +315,14 @@ def generate_html(data):
             <!-- Debts -->
             <div class="border border-zinc-800 bg-zinc-950/60 rounded-lg p-3.5">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-semibold text-zinc-300">💳 Loan Repayments</span>
+                    <span class="text-xs font-semibold text-zinc-300">💳 Debts & Liabilities</span>
                     <span class="text-[11px] font-mono font-bold text-rose-400 bg-rose-950/60 border border-rose-800/40 px-1.5 py-0.5 rounded">{debt_pct:.1f}%</span>
                 </div>
                 <div class="text-xl font-bold text-white font-mono">{data['total_debt']:,.0f} <span class="text-[11px] font-normal text-zinc-500">UGX</span></div>
                 <div class="w-full bg-zinc-800 rounded-full h-1.5 mt-2">
                     <div class="bg-rose-500 h-1.5 rounded-full" style="width: {debt_pct}%"></div>
                 </div>
-                <div class="text-[11px] text-zinc-400 mt-2">Zenka, MoKash & MomoAdvance</div>
+                <div class="text-[11px] text-zinc-400 mt-2">{data['repaid_debt']/1e6:.2f}M repaid • {data['owed_debt']/1e3:.0f}k owed</div>
             </div>
 
             <!-- Subscriptions -->
@@ -497,7 +504,7 @@ def generate_html(data):
             </div>
             <ul class="list-disc list-inside space-y-1 text-zinc-400">
                 <li><strong class="text-zinc-200">Rent is now formally structured:</strong> At 1.7M UGX/mo (5.1M in Q3), rent is your largest expense ({rent_pct:.1f}%). Accounting for it ensures accurate monthly cash flow forecasting.</li>
-                <li><strong class="text-zinc-200">Debt servicing successfully eliminated:</strong> Loans accounted for 870k in July and 721k in August, but dropped to 0 UGX in September. Maintaining this saves 700k–850k monthly.</li>
+                <li><strong class="text-zinc-200">Debt obligations & payables:</strong> 1.59M in bank/mobile loans fully settled. Current outstanding liabilities include 326k in medication credit (Health Okay 163k, Maureen Asio 163k).</li>
                 <li><strong class="text-zinc-200">Fixed overhead disciplined at {fixed_pct:.1f}%:</strong> Your 4 core obligations total {fixed/1e6:.2f}M UGX. Keeping fixed commitments near 50% gives ample flexibility for variable living and savings.</li>
             </ul>
         </div>
