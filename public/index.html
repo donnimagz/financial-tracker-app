@@ -121,6 +121,14 @@
         <span class="ml-1 text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">TODAY</span>
       </button>
 
+      <button onclick="switchTab('q3-report')" id="tab-q3-report" class="nav-tab">
+        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span>Q3 Report</span>
+        <span class="ml-1 text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">AUDIT</span>
+      </button>
+
       <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab active">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
         <span>Executive Dashboard</span>
@@ -261,6 +269,200 @@
 
         <div id="glanceActivityList" class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
           <p class="text-xs text-zinc-400 py-4 text-center">Loading recent activity...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- TAB: Q3 2026 AUDIT & EXECUTIVE REPORT          -->
+    <!-- ============================================== -->
+    <div id="view-q3-report" class="hidden flex flex-col gap-6 pb-20 sm:pb-6">
+      
+      <!-- Top Action & Title Banner -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+            <span class="text-xs uppercase tracking-widest font-mono text-emerald-600 dark:text-emerald-400 font-semibold">Q3 Executive Expense Audit</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-50">Q3 2026 Overhead & Expenditure</h2>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400">July 1 – September 21, 2026 • Reconciled with Rent (1.7M/mo), Debts, Subscriptions & Utilities</p>
+        </div>
+        
+        <div class="flex items-center gap-2 flex-wrap">
+          <a href="/reports/Q3_2026_Expense_Report.pdf" target="_blank" download="Q3_2026_Expense_Report.pdf" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <span>Download Shareable PDF</span>
+          </a>
+          <a href="/reports/Q3_2026_Expense_Report.html" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors shadow-sm">
+            <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+            <span>Print View</span>
+          </a>
+          <button onclick="loadQ3Report()" class="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" title="Refresh Report">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Top KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card p-5 flex flex-col justify-between">
+          <div class="text-xs uppercase tracking-wider font-semibold text-zinc-500 dark:text-zinc-400 mb-1">Total Q3 Outflow</div>
+          <div id="q3KpiTotal" class="text-2xl sm:text-3xl font-extrabold font-mono text-zinc-900 dark:text-zinc-50">15,147,030 <span class="text-xs font-normal text-zinc-500">UGX</span></div>
+          <div class="text-xs text-zinc-500 mt-2 flex items-center gap-1">
+            <span id="q3KpiTxCount" class="font-semibold text-emerald-500">200</span> verified transactions
+          </div>
+        </div>
+
+        <div class="card p-5 flex flex-col justify-between border-emerald-500/30 bg-emerald-500/5">
+          <div class="text-xs uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400 mb-1">Fixed Overhead (4 Focus Pillars)</div>
+          <div id="q3KpiFixed" class="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">7,678,000 <span class="text-xs font-normal text-emerald-600/60">UGX</span></div>
+          <div class="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-2">
+            <span id="q3KpiFixedPct" class="font-bold">50.7%</span> of total quarterly budget
+          </div>
+        </div>
+
+        <div class="card p-5 flex flex-col justify-between">
+          <div class="text-xs uppercase tracking-wider font-semibold text-zinc-500 dark:text-zinc-400 mb-1">Variable & Living Expenses</div>
+          <div id="q3KpiVar" class="text-2xl sm:text-3xl font-extrabold font-mono text-zinc-900 dark:text-zinc-50">7,469,030 <span class="text-xs font-normal text-zinc-500">UGX</span></div>
+          <div class="text-xs text-zinc-500 mt-2">
+            <span id="q3KpiVarPct" class="font-semibold">49.3%</span> medical, groceries, fuel, dining
+          </div>
+        </div>
+
+        <div class="card p-5 flex flex-col justify-between border-blue-500/30 bg-blue-500/5">
+          <div class="text-xs uppercase tracking-wider font-semibold text-blue-600 dark:text-blue-400 mb-1">Net Debt Reduction</div>
+          <div class="text-2xl sm:text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400">873,700 <span class="text-xs font-normal text-blue-500/60">UGX</span></div>
+          <div class="text-xs text-blue-600/80 dark:text-blue-400/80 mt-2">
+            Paid 1.59M vs borrowed 717.5k
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Overhead Focus Pillars Grid -->
+      <div class="card p-5 sm:p-6">
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
+          <h3 class="font-bold text-base text-zinc-900 dark:text-zinc-100">🎯 Core Overhead Breakdown (7,678,000 UGX Total)</h3>
+          <span class="text-xs font-mono text-zinc-500">Non-Negotiable Monthly Commitments</span>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Rent -->
+          <div class="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">🏠 Rent (Housing)</span>
+              <span id="q3RentPctBadge" class="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">33.7%</span>
+            </div>
+            <div id="q3RentTotal" class="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-50">5,100,000 <span class="text-xs font-normal text-zinc-500">UGX</span></div>
+            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 mt-2">
+              <div id="q3RentBar" class="bg-emerald-500 h-1.5 rounded-full" style="width: 33.7%"></div>
+            </div>
+            <p class="text-xs text-zinc-500 mt-2">1,700,000 UGX/mo (Jul, Aug, Sep)</p>
+          </div>
+
+          <!-- Debts -->
+          <div class="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">💳 Loan Repayments</span>
+              <span id="q3DebtPctBadge" class="text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">10.5%</span>
+            </div>
+            <div id="q3DebtTotal" class="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-50">1,591,200 <span class="text-xs font-normal text-zinc-500">UGX</span></div>
+            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 mt-2">
+              <div id="q3DebtBar" class="bg-rose-500 h-1.5 rounded-full" style="width: 10.5%"></div>
+            </div>
+            <p class="text-xs text-zinc-500 mt-2">MoKash, Zenka & MomoAdvance</p>
+          </div>
+
+          <!-- Subscriptions -->
+          <div class="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">🔄 Subscriptions & AI</span>
+              <span id="q3SubsPctBadge" class="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">3.4%</span>
+            </div>
+            <div id="q3SubsTotal" class="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-50">513,200 <span class="text-xs font-normal text-zinc-500">UGX</span></div>
+            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 mt-2">
+              <div id="q3SubsBar" class="bg-amber-500 h-1.5 rounded-full" style="width: 3.4%"></div>
+            </div>
+            <p class="text-xs text-zinc-500 mt-2">Google AI, ChatGPT, iCloud, Netflix</p>
+          </div>
+
+          <!-- Utilities -->
+          <div class="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">💡 Utilities (WiFi & Power)</span>
+              <span id="q3UtilsPctBadge" class="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded">3.1%</span>
+            </div>
+            <div id="q3UtilsTotal" class="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-50">473,600 <span class="text-xs font-normal text-zinc-500">UGX</span></div>
+            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 mt-2">
+              <div id="q3UtilsBar" class="bg-cyan-500 h-1.5 rounded-full" style="width: 3.1%"></div>
+            </div>
+            <p class="text-xs text-zinc-500 mt-2">WiFi (330k) + Electricity (143.6k)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itemized Schedules Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Rent & Debts Column -->
+        <div class="flex flex-col gap-6">
+          <!-- Rent Schedule -->
+          <div class="card p-5">
+            <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+              <h4 class="font-bold text-sm text-zinc-900 dark:text-zinc-100">🏠 Rent Schedule (1.7M / month)</h4>
+              <span class="font-mono text-xs text-emerald-600 dark:text-emerald-400 font-bold">5,100,000 UGX</span>
+            </div>
+            <div id="q3RentTable" class="overflow-x-auto">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Debts Schedule -->
+          <div class="card p-5">
+            <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+              <h4 class="font-bold text-sm text-zinc-900 dark:text-zinc-100">💳 Loan Repayments (Debts)</h4>
+              <span class="font-mono text-xs text-rose-600 dark:text-rose-400 font-bold">1,591,200 UGX</span>
+            </div>
+            <div id="q3DebtsTable" class="overflow-x-auto max-h-[320px]">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Subscriptions & Utilities Column -->
+        <div class="flex flex-col gap-6">
+          <!-- Subscriptions Table -->
+          <div class="card p-5">
+            <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+              <h4 class="font-bold text-sm text-zinc-900 dark:text-zinc-100">🔄 Subscriptions & AI Tools</h4>
+              <span class="font-mono text-xs text-amber-600 dark:text-amber-400 font-bold">513,200 UGX</span>
+            </div>
+            <div id="q3SubsTable" class="overflow-x-auto max-h-[320px]">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Utilities Table -->
+          <div class="card p-5">
+            <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+              <h4 class="font-bold text-sm text-zinc-900 dark:text-zinc-100">💡 Utilities (WiFi & Electricity)</h4>
+              <span class="font-mono text-xs text-cyan-600 dark:text-cyan-400 font-bold">473,600 UGX</span>
+            </div>
+            <div id="q3UtilsTable" class="overflow-x-auto max-h-[320px]">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Categories Table -->
+      <div class="card p-5 sm:p-6">
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-3">
+          <h4 class="font-bold text-base text-zinc-900 dark:text-zinc-100">🏆 Complete Category Ranking (Top 15)</h4>
+          <span class="text-xs font-mono text-zinc-500">Includes Rent & Living Expenses</span>
+        </div>
+        <div id="q3CategoriesTable" class="overflow-x-auto">
+          <!-- Rendered via JS -->
         </div>
       </div>
 
@@ -1052,6 +1254,11 @@
     <button onclick="switchTab('daily')" id="mobTab-daily" class="mobile-nav-btn active">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       <span>Today</span>
+    </button>
+
+    <button onclick="switchTab('q3-report')" id="mobTab-q3-report" class="mobile-nav-btn">
+      <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+      <span>Q3 Audit</span>
     </button>
 
     <button onclick="switchTab('dashboard')" id="mobTab-dashboard" class="mobile-nav-btn">

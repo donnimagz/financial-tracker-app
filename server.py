@@ -197,6 +197,8 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
                     self.handle_get_sync_status()
                 elif path == "/api/daily-glance":
                     self.handle_get_daily_glance(query)
+                elif path == "/api/q3-report":
+                    self.handle_get_q3_report()
                 else:
                     self._send_json({"error": "Endpoint not found"}, status=404)
             except Exception as e:
@@ -221,6 +223,12 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             return
         elif path in ("/icons/icon.svg", "/icon.svg"):
             self.serve_file(os.path.join(PUBLIC_DIR, "icons", "icon.svg"), "image/svg+xml")
+            return
+        elif path == "/reports/Q3_2026_Expense_Report.pdf":
+            self.serve_file(os.path.join(PUBLIC_DIR, "reports", "Q3_2026_Expense_Report.pdf"), "application/pdf")
+            return
+        elif path == "/reports/Q3_2026_Expense_Report.html":
+            self.serve_file(os.path.join(PUBLIC_DIR, "reports", "Q3_2026_Expense_Report.html"), "text/html; charset=utf-8")
             return
 
         super().do_GET()
@@ -881,6 +889,108 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
                 "projected_month_total": round(projected_month_total, 2),
                 "top_categories": top_subcats
             }
+        })
+
+    def handle_get_q3_report(self):
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT COUNT(*), SUM(amount)
+            FROM transactions
+            WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
+              AND flag != 'transfer-between-own-accounts'
+        """)
+        cnt, total_q3 = cur.fetchone()
+        total_q3 = total_q3 or 0.0
+
+        cur.execute("""
+            SELECT date, description, amount, account, notes
+            FROM transactions
+            WHERE subcategory = 'Housing' AND date >= '2026-07-01' AND date <= '2026-09-30'
+              AND description LIKE 'Rent%'
+            ORDER BY date ASC
+        """)
+        rent_txs = [dict(r) for r in cur.fetchall()]
+        total_rent = sum(r['amount'] for r in rent_txs)
+
+        cur.execute("""
+            SELECT date, description, amount, account
+            FROM transactions
+            WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
+              AND subcategory = 'Loans & Lending'
+            ORDER BY date DESC
+        """)
+        debt_txs = [dict(r) for r in cur.fetchall()]
+        total_debt = sum(r['amount'] for r in debt_txs)
+
+        cur.execute("""
+            SELECT date, description, amount, account, subcategory
+            FROM transactions
+            WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
+              AND (subcategory = 'Subscriptions'
+                   OR description LIKE '%Google One%'
+                   OR description LIKE '%Google AI%'
+                   OR description LIKE '%ChatGPT%'
+                   OR description LIKE '%DeepSeek%'
+                   OR description LIKE '%Adobe%'
+                   OR description LIKE '%iCloud%'
+                   OR description LIKE '%Netflix%'
+                   OR description LIKE '%Spotify%'
+                   OR description LIKE '%Subscriptions%')
+            ORDER BY date DESC
+        """)
+        sub_txs = [dict(r) for r in cur.fetchall()]
+        total_subs = sum(r['amount'] for r in sub_txs)
+
+        cur.execute("""
+            SELECT date, description, amount, account
+            FROM transactions
+            WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
+              AND (subcategory = 'Utilities' OR description LIKE '%Yaka%' OR description LIKE '%WiFi%' OR description LIKE '%Electricity%')
+            ORDER BY date DESC
+        """)
+        util_txs = [dict(r) for r in cur.fetchall()]
+        total_utils = sum(r['amount'] for r in util_txs)
+
+        months_data = {}
+        for m in ['2026-07', '2026-08', '2026-09']:
+            cur.execute("""
+                SELECT SUM(amount), COUNT(*)
+                FROM transactions
+                WHERE type = 'Expense' AND date LIKE ? AND flag != 'transfer-between-own-accounts'
+            """, (f"{m}%",))
+            exp, cnt_m = cur.fetchone()
+            months_data[m] = {"spend": exp or 0.0, "count": cnt_m or 0}
+
+        cur.execute("""
+            SELECT group_name, subcategory, COUNT(*) as tx_count, SUM(amount) as total_amt
+            FROM transactions
+            WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
+              AND flag != 'transfer-between-own-accounts'
+            GROUP BY group_name, subcategory
+            ORDER BY total_amt DESC
+        """)
+        cat_rows = [dict(r) for r in cur.fetchall()]
+
+        conn.close()
+
+        fixed_overhead = total_rent + total_debt + total_subs + total_utils
+        variable_spend = total_q3 - fixed_overhead
+
+        self._send_json({
+            "total_q3": total_q3,
+            "tx_count": cnt,
+            "fixed_overhead": fixed_overhead,
+            "variable_spend": variable_spend,
+            "rent": {"total": total_rent, "transactions": rent_txs},
+            "debts": {"total": total_debt, "transactions": debt_txs},
+            "subscriptions": {"total": total_subs, "transactions": sub_txs},
+            "utilities": {"total": total_utils, "transactions": util_txs},
+            "months": months_data,
+            "top_categories": cat_rows[:15],
+            "pdf_url": "/reports/Q3_2026_Expense_Report.pdf",
+            "html_url": "/reports/Q3_2026_Expense_Report.html"
         })
 
     def handle_import_transactions(self, raw_post_data, body, query):

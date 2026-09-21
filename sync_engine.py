@@ -43,6 +43,7 @@ PENNYWORTH_CATEGORY_MAP = {
     
     # Health
     'Health': ('Health', 'Medical', 'Expense'),
+    'Natural Health': ('Health', 'Medical', 'Expense'),
     'Hospital': ('Health', 'Hospital', 'Expense'),
     
     # Lifestyle

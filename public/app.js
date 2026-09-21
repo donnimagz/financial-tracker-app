@@ -324,7 +324,7 @@ function setWindowMode(mode) {
 // --- Navigation Tabs ---
 function switchTab(tabId) {
   state.activeTab = tabId;
-  const tabs = ['daily', 'dashboard', 'transactions', 'analytics', 'review', 'recurring'];
+  const tabs = ['daily', 'q3-report', 'dashboard', 'transactions', 'analytics', 'review', 'recurring'];
   tabs.forEach(t => {
     const tabEl = document.getElementById(`tab-${t}`);
     const mobTabEl = document.getElementById(`mobTab-${t}`);
@@ -343,6 +343,8 @@ function switchTab(tabId) {
   if (tabId === 'daily') {
     loadDailyGlance();
     setTimeout(() => glanceSparklineChart?.resize(), 50);
+  } else if (tabId === 'q3-report') {
+    loadQ3Report();
   } else if (tabId === 'dashboard') {
     setTimeout(() => {
       monthlyChart?.resize();
@@ -1961,6 +1963,172 @@ async function handleQuickAddSubmit(e) {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Save Expense';
   }
+}
+
+// --- Q3 2026 Expense Report Tab Controller ---
+async function loadQ3Report() {
+  try {
+    const res = await authFetch('/api/q3-report');
+    const data = await res.json();
+    if (!data || !data.total_q3) return;
+
+    state.q3ReportData = data;
+
+    const total = data.total_q3 || 0;
+    const fixed = data.fixed_overhead || 0;
+    const variable = data.variable_spend || 0;
+
+    const fixedPct = total > 0 ? (fixed / total * 100).toFixed(1) : '0.0';
+    const varPct = total > 0 ? (variable / total * 100).toFixed(1) : '0.0';
+
+    // Top KPIs
+    const elKpiTotal = document.getElementById('q3KpiTotal');
+    if (elKpiTotal) elKpiTotal.innerHTML = `${formatUGX(total)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+    const elKpiTxCount = document.getElementById('q3KpiTxCount');
+    if (elKpiTxCount) elKpiTxCount.textContent = (data.tx_count || 0).toLocaleString();
+    const elKpiFixed = document.getElementById('q3KpiFixed');
+    if (elKpiFixed) elKpiFixed.innerHTML = `${formatUGX(fixed)} <span class="text-xs font-normal text-emerald-600/60">UGX</span>`;
+    const elKpiFixedPct = document.getElementById('q3KpiFixedPct');
+    if (elKpiFixedPct) elKpiFixedPct.textContent = `${fixedPct}%`;
+    const elKpiVar = document.getElementById('q3KpiVar');
+    if (elKpiVar) elKpiVar.innerHTML = `${formatUGX(variable)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+    const elKpiVarPct = document.getElementById('q3KpiVarPct');
+    if (elKpiVarPct) elKpiVarPct.textContent = `${varPct}%`;
+
+    // 4 Core Overhead Pillars
+    const rentTot = data.rent?.total || 0;
+    const rentPct = total > 0 ? (rentTot / total * 100).toFixed(1) : '0.0';
+    const elRentTot = document.getElementById('q3RentTotal');
+    if (elRentTot) elRentTot.innerHTML = `${formatUGX(rentTot)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+    const elRentBadge = document.getElementById('q3RentPctBadge');
+    if (elRentBadge) elRentBadge.textContent = `${rentPct}%`;
+    const elRentBar = document.getElementById('q3RentBar');
+    if (elRentBar) elRentBar.style.width = `${Math.min(100, parseFloat(rentPct))}%`;
+
+    const debtTot = data.debts?.total || 0;
+    const debtPct = total > 0 ? (debtTot / total * 100).toFixed(1) : '0.0';
+    const elDebtTot = document.getElementById('q3DebtTotal');
+    if (elDebtTot) elDebtTot.innerHTML = `${formatUGX(debtTot)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+    const elDebtBadge = document.getElementById('q3DebtPctBadge');
+    if (elDebtBadge) elDebtBadge.textContent = `${debtPct}%`;
+    const elDebtBar = document.getElementById('q3DebtBar');
+    if (elDebtBar) elDebtBar.style.width = `${Math.min(100, parseFloat(debtPct))}%`;
+
+    const subsTot = data.subscriptions?.total || 0;
+    const subsPct = total > 0 ? (subsTot / total * 100).toFixed(1) : '0.0';
+    const elSubsTot = document.getElementById('q3SubsTotal');
+    if (elSubsTot) elSubsTot.innerHTML = `${formatUGX(subsTot)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+    const elSubsBadge = document.getElementById('q3SubsPctBadge');
+    if (elSubsBadge) elSubsBadge.textContent = `${subsPct}%`;
+    const elSubsBar = document.getElementById('q3SubsBar');
+    if (elSubsBar) elSubsBar.style.width = `${Math.min(100, parseFloat(subsPct))}%`;
+
+    const utilsTot = data.utilities?.total || 0;
+    const utilsPct = total > 0 ? (utilsTot / total * 100).toFixed(1) : '0.0';
+    const elUtilsTot = document.getElementById('q3UtilsTotal');
+    if (elUtilsTot) elUtilsTot.innerHTML = `${formatUGX(utilsTot)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+    const elUtilsBadge = document.getElementById('q3UtilsPctBadge');
+    if (elUtilsBadge) elUtilsBadge.textContent = `${utilsPct}%`;
+    const elUtilsBar = document.getElementById('q3UtilsBar');
+    if (elUtilsBar) elUtilsBar.style.width = `${Math.min(100, parseFloat(utilsPct))}%`;
+
+    // Render Tables
+    renderQ3ScheduleTable('q3RentTable', data.rent?.transactions || [], 'text-emerald-600 dark:text-emerald-400');
+    renderQ3ScheduleTable('q3DebtsTable', data.debts?.transactions || [], 'text-rose-600 dark:text-rose-400');
+    renderQ3ScheduleTable('q3SubsTable', data.subscriptions?.transactions || [], 'text-amber-600 dark:text-amber-400');
+    renderQ3ScheduleTable('q3UtilsTable', data.utilities?.transactions || [], 'text-cyan-600 dark:text-cyan-400');
+
+    // Render Categories Table
+    renderQ3CategoriesTable(data.top_categories || [], total);
+
+  } catch (err) {
+    console.error('Error loading Q3 report data:', err);
+  }
+}
+
+function renderQ3ScheduleTable(elementId, transactions, amountColorClass) {
+  const container = document.getElementById(elementId);
+  if (!container) return;
+
+  if (!transactions || transactions.length === 0) {
+    container.innerHTML = '<p class="text-xs text-zinc-400 py-3 text-center">No transactions found.</p>';
+    return;
+  }
+
+  let html = `
+    <table class="finance-table w-full text-xs">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Account</th>
+          <th class="text-right">Amount (UGX)</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  transactions.forEach(tx => {
+    html += `
+      <tr>
+        <td class="font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">${escapeHtml(tx.date || '')}</td>
+        <td class="font-medium text-zinc-900 dark:text-zinc-100">${escapeHtml(tx.description || '')}</td>
+        <td class="text-zinc-500 dark:text-zinc-400 whitespace-nowrap">${escapeHtml(tx.account || '')}</td>
+        <td class="text-right font-mono font-semibold ${amountColorClass} whitespace-nowrap">${formatUGX(tx.amount)}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  container.innerHTML = html;
+}
+
+function renderQ3CategoriesTable(categories, totalQ3) {
+  const container = document.getElementById('q3CategoriesTable');
+  if (!container) return;
+
+  if (!categories || categories.length === 0) {
+    container.innerHTML = '<p class="text-xs text-zinc-400 py-3 text-center">No categories found.</p>';
+    return;
+  }
+
+  let html = `
+    <table class="finance-table w-full text-xs">
+      <thead>
+        <tr>
+          <th>Category Group</th>
+          <th>Subcategory</th>
+          <th class="text-center">Transactions</th>
+          <th class="text-right">Total Outflow (UGX)</th>
+          <th class="text-right">% of Q3 Spend</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  categories.forEach(cat => {
+    const pct = totalQ3 > 0 ? (cat.total_amt / totalQ3 * 100).toFixed(1) : '0.0';
+    html += `
+      <tr>
+        <td class="text-zinc-500 dark:text-zinc-400 uppercase text-[11px] font-semibold">${escapeHtml(cat.group_name || '')}</td>
+        <td class="font-semibold text-zinc-900 dark:text-zinc-100">${escapeHtml(cat.subcategory || '')}</td>
+        <td class="text-center font-mono text-zinc-600 dark:text-zinc-400">${(cat.tx_count || 0).toLocaleString()}</td>
+        <td class="text-right font-mono font-bold text-zinc-900 dark:text-zinc-100">${formatUGX(cat.total_amt)}</td>
+        <td class="text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">${pct}%</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  container.innerHTML = html;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
