@@ -914,12 +914,12 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         rent_txs = [dict(r) for r in cur.fetchall()]
         total_rent = sum(r['amount'] for r in rent_txs)
 
-        # Focus 2: Debts (Loan repayments + outstanding medication debts)
+        # Focus 2: Debts (Loan repayments + outstanding debts)
         cur.execute("""
             SELECT date, description, amount, account, flag, notes
             FROM transactions
             WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
-              AND (subcategory = 'Loans & Lending' OR flag = 'debt-owed' OR description LIKE '%(Medication Debt)%')
+              AND (subcategory = 'Loans & Lending' OR flag = 'debt-owed' OR description LIKE '%Debt%' OR description LIKE '%Owed%')
             ORDER BY date DESC
         """)
         debt_txs = [dict(r) for r in cur.fetchall()]

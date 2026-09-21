@@ -48,12 +48,12 @@ def fetch_report_data():
     rent_txs = [dict(r) for r in cur.fetchall()]
     total_rent = sum(r['amount'] for r in rent_txs)
 
-    # Focus 2: Debts (Loan repayments + outstanding medication debts)
+    # Focus 2: Debts (Loan repayments + outstanding debts)
     cur.execute("""
         SELECT date, description, amount, account, flag
         FROM transactions
         WHERE type = 'Expense' AND date >= '2026-07-01' AND date <= '2026-09-30'
-          AND (subcategory = 'Loans & Lending' OR flag = 'debt-owed' OR description LIKE '%(Medication Debt)%')
+          AND (subcategory = 'Loans & Lending' OR flag = 'debt-owed' OR description LIKE '%Debt%' OR description LIKE '%Owed%')
         ORDER BY date DESC
     """)
     debt_txs = [dict(r) for r in cur.fetchall()]
@@ -284,11 +284,11 @@ def generate_html(data):
                 <span class="font-semibold">{var_pct:.1f}%</span> medical, groceries, fuel, etc.
             </div>
         </div>
-        <div class="bg-zinc-900/90 border border-blue-900/50 bg-blue-950/10 rounded-xl p-4">
-            <div class="text-[11px] uppercase tracking-wider font-semibold text-blue-400 mb-1">Net Debt Reduction</div>
-            <div class="text-2xl font-extrabold text-blue-300 font-mono">873,700 <span class="text-xs font-normal text-blue-500">UGX</span></div>
-            <div class="text-[11px] text-blue-400/80 mt-1">
-                Paid 1.59M vs borrowed 717k
+        <div class="bg-zinc-900/90 border border-amber-900/50 bg-amber-950/10 rounded-xl p-4">
+            <div class="text-[11px] uppercase tracking-wider font-semibold text-amber-400 mb-1">Active Liabilities Owed</div>
+            <div class="text-2xl font-extrabold text-amber-300 font-mono">{data['owed_debt']:,.0f} <span class="text-xs font-normal text-amber-500">UGX</span></div>
+            <div class="text-[11px] text-amber-400/80 mt-1">
+                4 active debts • {data['repaid_debt']/1e6:.2f}M repaid
             </div>
         </div>
     </div>
@@ -379,7 +379,7 @@ def generate_html(data):
                     <span class="text-xs font-mono text-zinc-400">{data['months']['2026-09']['count']} txs</span>
                 </div>
                 <div class="text-lg font-bold font-mono text-zinc-100">{data['months']['2026-09']['spend']:,.0f} UGX</div>
-                <div class="text-[11px] text-zinc-400 mt-1">Rent: 1.7M • Debts: 0k (Zero debt!)</div>
+                <div class="text-[11px] text-zinc-400 mt-1">Rent: 1.7M • Owed: {data['owed_debt']/1e3:.0f}k (4 debts)</div>
             </div>
         </div>
     </div>
@@ -415,7 +415,7 @@ def generate_html(data):
             <!-- Debt Repayments -->
             <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-xs uppercase tracking-wider text-white">💳 Loan Repayments (Debts)</h3>
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-white">💳 Debts & Liabilities Schedule</h3>
                     <span class="font-mono text-xs text-rose-400 font-bold">{data['total_debt']:,.0f} UGX</span>
                 </div>
                 <table class="w-full text-xs">
@@ -504,7 +504,7 @@ def generate_html(data):
             </div>
             <ul class="list-disc list-inside space-y-1 text-zinc-400">
                 <li><strong class="text-zinc-200">Rent is now formally structured:</strong> At 1.7M UGX/mo (5.1M in Q3), rent is your largest expense ({rent_pct:.1f}%). Accounting for it ensures accurate monthly cash flow forecasting.</li>
-                <li><strong class="text-zinc-200">Debt obligations & payables:</strong> 1.59M in bank/mobile loans fully settled. Current outstanding liabilities include 326k in medication credit (Health Okay 163k, Maureen Asio 163k).</li>
+                <li><strong class="text-zinc-200">Debt obligations & payables:</strong> 1.59M in bank/mobile loans fully settled. Current outstanding liabilities total {data['owed_debt']:,.0f} UGX across 4 active commitments: MoKash (327k), Zenka (203.4k), Health Okay (163k), and Maureen Asio (163k).</li>
                 <li><strong class="text-zinc-200">Fixed overhead disciplined at {fixed_pct:.1f}%:</strong> Your 4 core obligations total {fixed/1e6:.2f}M UGX. Keeping fixed commitments near 50% gives ample flexibility for variable living and savings.</li>
             </ul>
         </div>
