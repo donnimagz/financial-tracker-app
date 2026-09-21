@@ -21,7 +21,7 @@
         }
         @page {
             size: A4;
-            margin: 12mm 12mm 12mm 12mm;
+            margin: 8mm 10mm 8mm 10mm;
         }
         @media print {
             body {
@@ -37,7 +37,7 @@
         }
     </style>
 </head>
-<body class="p-6 max-w-5xl mx-auto text-sm">
+<body class="p-3 max-w-5xl mx-auto text-sm">
 
     <!-- Header / Brand Banner -->
     <header class="border-b border-zinc-800 pb-5 mb-6 flex justify-between items-start">
@@ -47,11 +47,11 @@
                 <span class="text-xs uppercase tracking-widest font-mono text-emerald-400 font-semibold">Personal Wealth Ledger • Don Magezi</span>
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-white">Monthly Operational Expenditure & Run-Rate Audit</h1>
-            <p class="text-xs text-zinc-400 mt-0.5">30-Day Financial Blueprint • Rent (1.7M), Subscriptions (318.2k), 1 Month of Debts & Utilities</p>
+            <p class="text-xs text-zinc-400 mt-0.5">30-Day Financial Blueprint • Rent (1.7M), Subscriptions (318.2k), Loans & Liabilities (1.701M) & Utilities (157.9k)</p>
         </div>
         <div class="text-right">
-            <span class="inline-block px-2.5 py-1 bg-zinc-800 border border-zinc-700 text-zinc-300 rounded text-xs font-mono">1-MONTH EXECUTIVE REPORT</span>
-            <div class="text-[11px] text-zinc-500 mt-1.5 font-mono">Generated: 2026-09-21 21:20</div>
+            <span class="inline-block px-2.5 py-1 bg-zinc-800 border border-zinc-700 text-zinc-300 rounded text-xs font-mono">1-MONTH EXECUTIVE AUDIT</span>
+            <div class="text-[11px] text-zinc-500 mt-1.5 font-mono">Generated: 2026-09-21 21:49</div>
         </div>
     </header>
 
@@ -60,11 +60,11 @@
         <!-- Scenario A -->
         <div class="border border-rose-900/50 rounded-xl p-4 bg-rose-950/20">
             <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-bold uppercase tracking-wider text-rose-400">Scenario A: 1-Mo Debt Payoff</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-400">Scenario A: 1-Mo Loan Payoff</span>
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">AGGRESSIVE</span>
             </div>
             <div class="text-2xl font-bold font-mono text-white mt-1">6,367,103 <span class="text-xs font-normal text-zinc-400">UGX</span></div>
-            <p class="text-xs text-zinc-400 mt-2">Clears 100% of all 6 active liabilities (1,701,360 UGX) in 30 days.</p>
+            <p class="text-xs text-zinc-400 mt-2">Clears 100% of all 6 active loans & liabilities (1,701,360 UGX) in 30 days.</p>
             <div class="text-[11px] font-mono text-rose-300/80 mt-2 pt-2 border-t border-rose-900/40">
                 Fixed: 3,877,427 • Variable: 2,489,677
             </div>
@@ -73,11 +73,11 @@
         <!-- Scenario B -->
         <div class="border border-amber-900/50 rounded-xl p-4 bg-amber-950/20">
             <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Scenario B: Amortized Debt</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Scenario B: Amortized Servicing</span>
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">BALANCED</span>
             </div>
             <div class="text-2xl font-bold font-mono text-white mt-1">5,763,263 <span class="text-xs font-normal text-zinc-400">UGX</span></div>
-            <p class="text-xs text-zinc-400 mt-2">Services debt at your actual Q3 average repayment pace (1,097,520 UGX/mo).</p>
+            <p class="text-xs text-zinc-400 mt-2">Services loans at your actual Q3 average repayment pace (1,097,520 UGX/mo).</p>
             <div class="text-[11px] font-mono text-amber-300/80 mt-2 pt-2 border-t border-amber-900/40">
                 Fixed: 3,273,587 • Variable: 2,489,677
             </div>
@@ -86,7 +86,7 @@
         <!-- Scenario C -->
         <div class="border border-emerald-900/50 rounded-xl p-4 bg-emerald-950/20">
             <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Scenario C: Debt-Free Baseline</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Scenario C: Loan-Free Baseline</span>
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">STEADY STATE</span>
             </div>
             <div class="text-2xl font-bold font-mono text-white mt-1">4,665,743 <span class="text-xs font-normal text-zinc-400">UGX</span></div>
@@ -109,9 +109,9 @@
                 <div class="text-[10px] text-zinc-500 mt-0.5">Fixed Housing</div>
             </div>
 
-            <!-- Debts -->
+            <!-- Debts & Loans -->
             <div class="p-3 rounded-lg border border-rose-900/40 bg-zinc-950/60">
-                <div class="text-rose-400 text-[10px] uppercase font-semibold">💳 1 Mo. Debts</div>
+                <div class="text-rose-400 text-[10px] uppercase font-semibold">💳 Loans & Debts</div>
                 <div class="text-base font-bold font-mono text-rose-300 mt-0.5">1,701,360</div>
                 <div class="text-[11px] text-rose-400 font-mono mt-1">26.7%</div>
                 <div class="text-[10px] text-rose-500/80 mt-0.5">6 Active Creditors</div>
@@ -227,30 +227,36 @@
     <!-- Page Break for Clean 2-Page Print -->
     <div class="page-break pt-4">
 
-        <!-- 1-Month Debts Schedule -->
-        <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 mb-6">
-            <div class="flex justify-between items-center mb-3">
+        <!-- 1-Month Loans & Liabilities Schedule -->
+        <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 mb-3.5">
+            <div class="flex justify-between items-center mb-2">
                 <div>
-                    <h3 class="font-bold text-xs uppercase tracking-wider text-rose-400">💳 Active 1-Month Debt Obligations (1,701,360 UGX Total)</h3>
-                    <p class="text-[11px] text-zinc-400">Complete itemization of all 6 active liabilities scheduled for 1-month liquidation.</p>
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-rose-400">💳 Active Loans & Liabilities Schedule (1,701,360 UGX Total)</h3>
+                    <p class="text-[11px] text-zinc-400">Itemization of all 6 active liabilities scheduled for 1-month liquidation across 3 debt classes.</p>
                 </div>
                 <span class="font-mono text-xs text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">1,701,360 UGX Total</span>
             </div>
             <table class="w-full text-xs">
                 <thead>
                     <tr class="border-b border-zinc-800 text-zinc-500 text-left">
-                        <th class="py-2 font-medium">Date Booked</th>
-                        <th class="py-2 font-medium">Creditor / Description</th>
-                        <th class="py-2 font-medium text-center">Status</th>
-                        <th class="py-2 font-medium">Account</th>
-                        <th class="py-2 font-medium text-right">Amount (UGX)</th>
+                        <th class="py-1.5 font-medium">Date Booked</th>
+                        <th class="py-1.5 font-medium">Creditor / Description</th>
+                        <th class="py-1.5 font-medium text-center">Loan Class</th>
+                        <th class="py-1.5 font-medium text-center">Status</th>
+                        <th class="py-1.5 font-medium">Account</th>
+                        <th class="py-1.5 font-medium text-right">Amount (UGX)</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-800/60">
                     
         <tr>
             <td class="font-mono text-zinc-400">2026-09-21</td>
-            <td class="font-semibold text-zinc-100">Vernon (Personal Loan Owed)</td>
+            <td class="font-semibold text-zinc-100">
+                Vernon (Personal Loan Owed)
+            </td>
+            <td class="text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">Personal Credit</span>
+            </td>
             <td class="text-center">
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">ACTIVE OWED</span>
             </td>
@@ -260,7 +266,12 @@
     
         <tr>
             <td class="font-mono text-zinc-400">2026-09-21</td>
-            <td class="font-semibold text-zinc-100">MoKash (Loan Balance Owed)</td>
+            <td class="font-semibold text-zinc-100">
+                MoKash (Loan Balance Owed)
+            </td>
+            <td class="text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">Digital Credit</span>
+            </td>
             <td class="text-center">
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">ACTIVE OWED</span>
             </td>
@@ -270,7 +281,12 @@
     
         <tr>
             <td class="font-mono text-zinc-400">2026-09-21</td>
-            <td class="font-semibold text-zinc-100">Zenka (Loan Balance Owed)</td>
+            <td class="font-semibold text-zinc-100">
+                Zenka (Loan Balance Owed)
+            </td>
+            <td class="text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">Digital Credit</span>
+            </td>
             <td class="text-center">
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">ACTIVE OWED</span>
             </td>
@@ -280,7 +296,12 @@
     
         <tr>
             <td class="font-mono text-zinc-400">2026-09-21</td>
-            <td class="font-semibold text-zinc-100">Health Okay (Medication Debt)</td>
+            <td class="font-semibold text-zinc-100">
+                Health Okay (Medication Debt)
+            </td>
+            <td class="text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">Pharmacy Credit</span>
+            </td>
             <td class="text-center">
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">ACTIVE OWED</span>
             </td>
@@ -290,7 +311,12 @@
     
         <tr>
             <td class="font-mono text-zinc-400">2026-09-21</td>
-            <td class="font-semibold text-zinc-100">Maureen Asio (Medication Debt)</td>
+            <td class="font-semibold text-zinc-100">
+                Maureen Asio (Medication Debt)
+            </td>
+            <td class="text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">Pharmacy Credit</span>
+            </td>
             <td class="text-center">
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">ACTIVE OWED</span>
             </td>
@@ -300,7 +326,12 @@
     
         <tr>
             <td class="font-mono text-zinc-400">2026-09-21</td>
-            <td class="font-semibold text-zinc-100">Benon - Ecopharm (Medication Debt)</td>
+            <td class="font-semibold text-zinc-100">
+                Benon - Ecopharm (Medication Debt)
+            </td>
+            <td class="text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">Pharmacy Credit</span>
+            </td>
             <td class="text-center">
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">ACTIVE OWED</span>
             </td>
@@ -310,34 +341,50 @@
     
                 </tbody>
             </table>
+
+            <!-- Subtotals summary bar -->
+            <div class="mt-2.5 pt-2.5 border-t border-zinc-800/80 grid grid-cols-3 gap-2 text-[10px] font-mono">
+                <div class="p-1.5 rounded bg-zinc-950/60 border border-zinc-800/60 flex justify-between">
+                    <span class="text-zinc-400">Personal Loan (Vernon):</span>
+                    <span class="text-rose-400 font-semibold">750,000 UGX</span>
+                </div>
+                <div class="p-1.5 rounded bg-zinc-950/60 border border-zinc-800/60 flex justify-between">
+                    <span class="text-zinc-400">Mobile Credit (MoKash + Zenka):</span>
+                    <span class="text-rose-400 font-semibold">530,360 UGX</span>
+                </div>
+                <div class="p-1.5 rounded bg-zinc-950/60 border border-zinc-800/60 flex justify-between">
+                    <span class="text-zinc-400">Pharmacy Credit (3 Creditors):</span>
+                    <span class="text-rose-400 font-semibold">421,000 UGX</span>
+                </div>
+            </div>
         </div>
 
         <!-- Housing & Utilities Breakdown -->
-        <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4">
-                <div class="flex justify-between items-center mb-2">
+        <div class="grid grid-cols-2 gap-3 mb-3.5">
+            <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-3.5">
+                <div class="flex justify-between items-center mb-1.5">
                     <h3 class="font-bold text-xs uppercase tracking-wider text-emerald-400">🏠 Rent (Housing)</h3>
                     <span class="font-mono text-xs text-emerald-400 font-bold">1,700,000 UGX</span>
                 </div>
-                <p class="text-xs text-zinc-400 mb-2">Non-negotiable monthly residential commitment.</p>
-                <div class="p-2.5 rounded bg-zinc-950/50 border border-zinc-800/80 text-xs flex justify-between items-center">
+                <p class="text-[11px] text-zinc-400 mb-1.5">Non-negotiable monthly residential commitment.</p>
+                <div class="p-2 rounded bg-zinc-950/50 border border-zinc-800/80 text-xs flex justify-between items-center">
                     <span class="text-zinc-300">Monthly Rent Payment</span>
                     <span class="font-mono font-bold text-emerald-400">1,700,000 UGX</span>
                 </div>
             </div>
 
-            <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4">
-                <div class="flex justify-between items-center mb-2">
+            <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-3.5">
+                <div class="flex justify-between items-center mb-1.5">
                     <h3 class="font-bold text-xs uppercase tracking-wider text-cyan-400">💡 Utilities (WiFi & Power)</h3>
                     <span class="font-mono text-xs text-cyan-400 font-bold">157,867 UGX</span>
                 </div>
-                <p class="text-xs text-zinc-400 mb-2">Estimated 30-day baseline based on Q3 consumption.</p>
-                <div class="space-y-1.5 text-xs">
-                    <div class="p-2 rounded bg-zinc-950/50 border border-zinc-800/80 flex justify-between items-center">
+                <p class="text-[11px] text-zinc-400 mb-1.5">Estimated 30-day baseline based on Q3 consumption.</p>
+                <div class="space-y-1 text-xs">
+                    <div class="p-1.5 rounded bg-zinc-950/50 border border-zinc-800/80 flex justify-between items-center">
                         <span class="text-zinc-300">Broadband WiFi (Liquid / Smile)</span>
                         <span class="font-mono font-semibold text-cyan-300">110,000 UGX</span>
                     </div>
-                    <div class="p-2 rounded bg-zinc-950/50 border border-zinc-800/80 flex justify-between items-center">
+                    <div class="p-1.5 rounded bg-zinc-950/50 border border-zinc-800/80 flex justify-between items-center">
                         <span class="text-zinc-300">Electricity (Yaka Power Tokens)</span>
                         <span class="font-mono font-semibold text-cyan-300">47,867 UGX</span>
                     </div>
@@ -346,8 +393,8 @@
         </div>
 
         <!-- Variable Living Pool -->
-        <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 mb-6">
-            <div class="flex justify-between items-center mb-3">
+        <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 mb-3.5">
+            <div class="flex justify-between items-center mb-2">
                 <div>
                     <h3 class="font-bold text-xs uppercase tracking-wider text-zinc-200">🛒 Estimated Monthly Variable Living Expenses</h3>
                     <p class="text-[11px] text-zinc-400">Standard monthly discretionary run-rate derived from Q3 historical spending patterns.</p>
@@ -357,10 +404,10 @@
             <table class="w-full text-xs">
                 <thead>
                     <tr class="border-b border-zinc-800 text-zinc-500 text-left">
-                        <th class="py-2 font-medium">Group</th>
-                        <th class="py-2 font-medium">Subcategory</th>
-                        <th class="py-2 font-medium text-right">Estimated 1-Mo Spend</th>
-                        <th class="py-2 font-medium text-right">% of Total Month</th>
+                        <th class="py-1.5 font-medium">Group</th>
+                        <th class="py-1.5 font-medium">Subcategory</th>
+                        <th class="py-1.5 font-medium text-right">Estimated 1-Mo Spend</th>
+                        <th class="py-1.5 font-medium text-right">% of Total Month</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-800/60">
@@ -426,14 +473,14 @@
         </div>
 
         <!-- Strategic Takeaways -->
-        <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-4 text-xs text-zinc-300">
+        <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-3.5 text-xs text-zinc-300">
             <div class="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
                 <span>💡 Strategic Monthly Cash-Flow Takeaways</span>
             </div>
-            <ul class="list-disc list-inside space-y-1 text-zinc-400">
-                <li><strong class="text-zinc-200">Liquidation Sprint (Scenario A):</strong> Committing <strong>6,367,103 UGX</strong> over the next 30 days permanently eliminates all 6 credit balances (Vernon 750k, MoKash 327k, Zenka 203.4k, Health Okay 163k, Maureen Asio 163k, Benon 95k).</li>
-                <li><strong class="text-zinc-200">Post-Debt Living Baseline (Scenario C):</strong> Once liabilities are paid off, your ongoing monthly burn rate contracts to <strong>4,665,743 UGX/month</strong>, creating an immediate monthly liquidity surplus of 1.70M UGX.</li>
-                <li><strong class="text-zinc-200">Lean Subscription Stack:</strong> Pruning DaVinci, Netflix, and Spotify and standardizing Adobe ($25) and personal iCloud ($25) keeps essential digital infrastructure capped at <strong>318,200 UGX/month</strong> (5.0% of total budget).</li>
+            <ul class="list-disc list-inside space-y-0.5 text-zinc-400 text-[11px]">
+                <li><strong class="text-zinc-200">Loan Liquidation Sprint (Scenario A):</strong> Committing <strong>6,367,103 UGX</strong> over the next 30 days permanently eliminates all 6 credit balances (Vernon personal loan 750k, MoKash 327k, Zenka 203.4k, Health Okay 163k, Maureen Asio 163k, Benon 95k).</li>
+                <li><strong class="text-zinc-200">Post-Loan Living Baseline (Scenario C):</strong> Once all loans are fully retired, your monthly burn rate contracts to <strong>4,665,743 UGX/month</strong>, unlocking an immediate monthly cash surplus of 1.70M UGX.</li>
+                <li><strong class="text-zinc-200">Lean Subscription Stack:</strong> Pruning DaVinci, Netflix, and Spotify while keeping Adobe ($25) and personal iCloud ($25) locks in digital overhead at <strong>318,200 UGX/month</strong>.</li>
             </ul>
         </div>
     </div>
