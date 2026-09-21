@@ -230,6 +230,12 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         elif path == "/reports/Q3_2026_Expense_Report.html":
             self.serve_file(os.path.join(PUBLIC_DIR, "reports", "Q3_2026_Expense_Report.html"), "text/html; charset=utf-8")
             return
+        elif path == "/reports/Monthly_Expense_Report.pdf":
+            self.serve_file(os.path.join(PUBLIC_DIR, "reports", "Monthly_Expense_Report.pdf"), "application/pdf")
+            return
+        elif path == "/reports/Monthly_Expense_Report.html":
+            self.serve_file(os.path.join(PUBLIC_DIR, "reports", "Monthly_Expense_Report.html"), "text/html; charset=utf-8")
+            return
 
         super().do_GET()
 
@@ -1033,7 +1039,9 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             "months": months_data,
             "top_categories": cat_rows[:15],
             "pdf_url": "/reports/Q3_2026_Expense_Report.pdf",
-            "html_url": "/reports/Q3_2026_Expense_Report.html"
+            "html_url": "/reports/Q3_2026_Expense_Report.html",
+            "monthly_pdf_url": "/reports/Monthly_Expense_Report.pdf",
+            "monthly_html_url": "/reports/Monthly_Expense_Report.html"
         })
 
     def handle_import_transactions(self, raw_post_data, body, query):

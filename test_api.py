@@ -298,6 +298,15 @@ class TestFinanceApp(unittest.TestCase):
         self.assertIn("200 OK", status)
         self.assertIn("Q3 2026 Expenditure & Overhead Audit", body)
 
+        # 20. Test static serving of Monthly PDF & HTML reports
+        status, body = call_handler("GET /reports/Monthly_Expense_Report.pdf HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn("200 OK", status)
+        self.assertIn("%PDF", body[:20])
+
+        status, body = call_handler("GET /reports/Monthly_Expense_Report.html HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        self.assertIn("200 OK", status)
+        self.assertIn("Monthly Operational Expenditure & Run-Rate Audit", body)
+
     def test_vercel_serverless_handler(self):
         """Verify Vercel serverless entry point api/index.py handles routing via __route__ query param."""
         from api.index import handler
