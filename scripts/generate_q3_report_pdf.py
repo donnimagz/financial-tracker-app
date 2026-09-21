@@ -120,16 +120,13 @@ def fetch_report_data():
     variable_spend = total_q3 - fixed_overhead
 
     subs_stack = [
+        {"name": "Adobe Creative Cloud", "amount": 95000.0, "category": "Design & Software ($25)"},
+        {"name": "iCloud (Personal Storage)", "amount": 95000.0, "category": "Cloud & Apple Storage ($25)"},
         {"name": "Google AI Pro", "amount": 76000.0, "category": "AI / Productivity"},
-        {"name": "Netflix", "amount": 51000.0, "category": "Entertainment"},
-        {"name": "iCloud (Personal)", "amount": 45000.0, "category": "Cloud & Storage"},
-        {"name": "Adobe Creative Cloud", "amount": 41000.0, "category": "Design & Software"},
         {"name": "ChatGPT Plus", "amount": 23000.0, "category": "AI / Productivity"},
         {"name": "Mum's iCloud", "amount": 13200.0, "category": "Family Storage"},
-        {"name": "Spotify Premium", "amount": 11000.0, "category": "Entertainment"},
         {"name": "Google One Storage", "amount": 8000.0, "category": "Cloud & Storage"},
-        {"name": "DeepSeek API", "amount": 8000.0, "category": "AI Developer API"},
-        {"name": "DaVinci AI", "amount": 7500.0, "category": "AI / Creative"}
+        {"name": "DeepSeek API", "amount": 8000.0, "category": "AI Developer API"}
     ]
     monthly_subs_total = sum(s["amount"] for s in subs_stack)
     monthly_rent = 1700000.0
@@ -476,23 +473,20 @@ def generate_html(data):
             </div>
         </div>
 
-        <!-- 10 Tool Subscription Stack Chips -->
+        <!-- 7 Tool Subscription Stack Chips -->
         <div class="mt-3 pt-2 border-t border-zinc-800/50">
             <div class="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mb-1.5 flex items-center justify-between">
-                <span>Active Monthly Subscription Inventory (283,700 UGX Total):</span>
-                <span class="text-emerald-400 font-mono font-normal">All 10 services accounted for</span>
+                <span>Active Monthly Subscription Inventory (318,200 UGX Total):</span>
+                <span class="text-emerald-400 font-mono font-normal">All 7 core services accounted for</span>
             </div>
             <div class="flex flex-wrap gap-1.5 text-[11px] font-mono">
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Adobe CC ($25): <strong class="text-white">95k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">iCloud Personal ($25): <strong class="text-white">95k</strong></span>
                 <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Google AI Pro: <strong class="text-white">76k</strong></span>
-                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Netflix: <strong class="text-white">51k</strong></span>
-                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">iCloud: <strong class="text-white">45k</strong></span>
-                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Adobe CC: <strong class="text-white">41k</strong></span>
                 <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">ChatGPT Plus: <strong class="text-white">23k</strong></span>
                 <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Mum's iCloud: <strong class="text-white">13.2k</strong></span>
-                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Spotify: <strong class="text-white">11k</strong></span>
                 <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Google One: <strong class="text-white">8k</strong></span>
                 <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">DeepSeek API: <strong class="text-white">8k</strong></span>
-                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">DaVinci AI: <strong class="text-white">7.5k</strong></span>
             </div>
         </div>
     </div>

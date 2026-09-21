@@ -984,16 +984,13 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         variable_spend = total_q3 - fixed_overhead
 
         subs_stack = [
+            {"name": "Adobe Creative Cloud", "amount": 95000.0, "category": "Design & Software ($25)"},
+            {"name": "iCloud (Personal Storage)", "amount": 95000.0, "category": "Cloud & Apple Storage ($25)"},
             {"name": "Google AI Pro", "amount": 76000.0, "category": "AI / Productivity"},
-            {"name": "Netflix", "amount": 51000.0, "category": "Entertainment"},
-            {"name": "iCloud (Personal)", "amount": 45000.0, "category": "Cloud & Storage"},
-            {"name": "Adobe Creative Cloud", "amount": 41000.0, "category": "Design & Software"},
             {"name": "ChatGPT Plus", "amount": 23000.0, "category": "AI / Productivity"},
             {"name": "Mum's iCloud", "amount": 13200.0, "category": "Family Storage"},
-            {"name": "Spotify Premium", "amount": 11000.0, "category": "Entertainment"},
             {"name": "Google One Storage", "amount": 8000.0, "category": "Cloud & Storage"},
-            {"name": "DeepSeek API", "amount": 8000.0, "category": "AI Developer API"},
-            {"name": "DaVinci AI", "amount": 7500.0, "category": "AI / Creative"}
+            {"name": "DeepSeek API", "amount": 8000.0, "category": "AI Developer API"}
         ]
         monthly_subs_total = sum(s["amount"] for s in subs_stack)
         monthly_rent = 1700000.0
