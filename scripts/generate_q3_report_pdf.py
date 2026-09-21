@@ -119,6 +119,39 @@ def fetch_report_data():
     fixed_overhead = total_rent + total_debt + total_subs + total_utils
     variable_spend = total_q3 - fixed_overhead
 
+    subs_stack = [
+        {"name": "Google AI Pro", "amount": 76000.0, "category": "AI / Productivity"},
+        {"name": "Netflix", "amount": 51000.0, "category": "Entertainment"},
+        {"name": "iCloud (Personal)", "amount": 45000.0, "category": "Cloud & Storage"},
+        {"name": "Adobe Creative Cloud", "amount": 41000.0, "category": "Design & Software"},
+        {"name": "ChatGPT Plus", "amount": 23000.0, "category": "AI / Productivity"},
+        {"name": "Mum's iCloud", "amount": 13200.0, "category": "Family Storage"},
+        {"name": "Spotify Premium", "amount": 11000.0, "category": "Entertainment"},
+        {"name": "Google One Storage", "amount": 8000.0, "category": "Cloud & Storage"},
+        {"name": "DeepSeek API", "amount": 8000.0, "category": "AI Developer API"},
+        {"name": "DaVinci AI", "amount": 7500.0, "category": "AI / Creative"}
+    ]
+    monthly_subs_total = sum(s["amount"] for s in subs_stack)
+    monthly_rent = 1700000.0
+    monthly_utils = total_utils / 3.0
+    monthly_var = variable_spend / 3.0
+
+    monthly_run_rate = {
+        "rent": monthly_rent,
+        "subscriptions": monthly_subs_total,
+        "subscriptions_stack": subs_stack,
+        "debt_1_month_active": owed_debt,
+        "debt_1_month_amortized": total_debt / 3.0,
+        "utilities": monthly_utils,
+        "variable_spend": monthly_var,
+        "fixed_overhead_active": monthly_rent + monthly_subs_total + owed_debt + monthly_utils,
+        "fixed_overhead_amortized": monthly_rent + monthly_subs_total + (total_debt / 3.0) + monthly_utils,
+        "fixed_overhead_debt_free": monthly_rent + monthly_subs_total + monthly_utils,
+        "total_monthly_with_active_debt": monthly_rent + monthly_subs_total + owed_debt + monthly_utils + monthly_var,
+        "total_monthly_amortized": monthly_rent + monthly_subs_total + (total_debt / 3.0) + monthly_utils + monthly_var,
+        "total_monthly_debt_free": monthly_rent + monthly_subs_total + monthly_utils + monthly_var
+    }
+
     return {
         "total_q3": total_q3,
         "tx_count": cnt,
@@ -134,6 +167,7 @@ def fetch_report_data():
         "util_txs": util_txs,
         "fixed_overhead": fixed_overhead,
         "variable_spend": variable_spend,
+        "monthly_run_rate": monthly_run_rate,
         "cat_rows": cat_rows,
         "months": months_data
     }
@@ -380,6 +414,85 @@ def generate_html(data):
                 </div>
                 <div class="text-lg font-bold font-mono text-zinc-100">{data['months']['2026-09']['spend']:,.0f} UGX</div>
                 <div class="text-[11px] text-zinc-400 mt-1">Rent: 1.7M • Owed: {data['owed_debt']/1e3:.0f}k ({len([r for r in data['debt_txs'] if r.get('flag') == 'debt-owed'])} debts)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1-Month Operational Expenditure Model & Subscriptions Stack -->
+    <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 mb-6">
+        <div class="flex justify-between items-center mb-3">
+            <div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">🎯 Single-Month Expenditure & Run-Rate Model</h2>
+                <p class="text-[11px] text-zinc-400">Standard 30-day budget incorporating Rent (1.7M), All Subscriptions (283.7k), Utilities, Living Expenses, and 1 Month of Debts.</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">30-DAY OPERATIONAL BLUEPRINT</span>
+        </div>
+
+        <!-- 3 Monthly Outflow Scenarios -->
+        <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="border border-rose-900/40 rounded-lg p-3 bg-rose-950/20">
+                <div class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-1">Scenario A: 1-Mo Debt Payoff</div>
+                <div class="text-xl font-bold font-mono text-white">{data['monthly_run_rate']['total_monthly_with_active_debt']:,.0f} <span class="text-[11px] font-normal text-zinc-400">UGX</span></div>
+                <div class="text-[11px] text-zinc-400 mt-1">Clears 100% of active debt ({data['monthly_run_rate']['debt_1_month_active']/1e3:,.0f}k) in 30 days</div>
+            </div>
+            <div class="border border-amber-900/40 rounded-lg p-3 bg-amber-950/20">
+                <div class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">Scenario B: Amortized Debt</div>
+                <div class="text-xl font-bold font-mono text-white">{data['monthly_run_rate']['total_monthly_amortized']:,.0f} <span class="text-[11px] font-normal text-zinc-400">UGX</span></div>
+                <div class="text-[11px] text-zinc-400 mt-1">Q3 average debt service ({data['monthly_run_rate']['debt_1_month_amortized']/1e3:,.0f}k / mo)</div>
+            </div>
+            <div class="border border-emerald-900/40 rounded-lg p-3 bg-emerald-950/20">
+                <div class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1">Scenario C: Debt-Free Baseline</div>
+                <div class="text-xl font-bold font-mono text-white">{data['monthly_run_rate']['total_monthly_debt_free']:,.0f} <span class="text-[11px] font-normal text-zinc-400">UGX</span></div>
+                <div class="text-[11px] text-zinc-400 mt-1">Ongoing monthly living burn rate with 0 debts</div>
+            </div>
+        </div>
+
+        <!-- 5 Monthly Pillars & Subscription Stack Breakdown -->
+        <div class="grid grid-cols-5 gap-2 text-center text-xs pt-3 border-t border-zinc-800/80">
+            <div class="bg-zinc-950/50 p-2 rounded border border-zinc-800/60">
+                <div class="text-zinc-500 text-[10px] uppercase font-semibold">🏠 Rent</div>
+                <div class="font-mono font-bold text-white text-sm">{data['monthly_run_rate']['rent']:,.0f}</div>
+                <div class="text-[10px] text-zinc-400">Fixed Monthly</div>
+            </div>
+            <div class="bg-zinc-950/50 p-2 rounded border border-amber-800/40">
+                <div class="text-amber-400 text-[10px] uppercase font-semibold">🔄 All Subscriptions</div>
+                <div class="font-mono font-bold text-amber-300 text-sm">{data['monthly_run_rate']['subscriptions']:,.0f}</div>
+                <div class="text-[10px] text-amber-500/80">10 Active Tools</div>
+            </div>
+            <div class="bg-zinc-950/50 p-2 rounded border border-rose-800/40">
+                <div class="text-rose-400 text-[10px] uppercase font-semibold">💳 1 Mo. Debts</div>
+                <div class="font-mono font-bold text-rose-300 text-sm">{data['monthly_run_rate']['debt_1_month_active']:,.0f}</div>
+                <div class="text-[10px] text-rose-500/80">Active clearance</div>
+            </div>
+            <div class="bg-zinc-950/50 p-2 rounded border border-cyan-800/40">
+                <div class="text-cyan-400 text-[10px] uppercase font-semibold">💡 Utilities</div>
+                <div class="font-mono font-bold text-cyan-300 text-sm">{data['monthly_run_rate']['utilities']:,.0f}</div>
+                <div class="text-[10px] text-cyan-500/80">WiFi + Power</div>
+            </div>
+            <div class="bg-zinc-950/50 p-2 rounded border border-zinc-800/60">
+                <div class="text-zinc-500 text-[10px] uppercase font-semibold">🛒 Variable Living</div>
+                <div class="font-mono font-bold text-zinc-200 text-sm">{data['monthly_run_rate']['variable_spend']:,.0f}</div>
+                <div class="text-[10px] text-zinc-400">Food, Fuel, Meds</div>
+            </div>
+        </div>
+
+        <!-- 10 Tool Subscription Stack Chips -->
+        <div class="mt-3 pt-2 border-t border-zinc-800/50">
+            <div class="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mb-1.5 flex items-center justify-between">
+                <span>Active Monthly Subscription Inventory (283,700 UGX Total):</span>
+                <span class="text-emerald-400 font-mono font-normal">All 10 services accounted for</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-[11px] font-mono">
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Google AI Pro: <strong class="text-white">76k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Netflix: <strong class="text-white">51k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">iCloud: <strong class="text-white">45k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Adobe CC: <strong class="text-white">41k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">ChatGPT Plus: <strong class="text-white">23k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Mum's iCloud: <strong class="text-white">13.2k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Spotify: <strong class="text-white">11k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">Google One: <strong class="text-white">8k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">DeepSeek API: <strong class="text-white">8k</strong></span>
+                <span class="px-2 py-0.5 rounded bg-zinc-800/80 border border-zinc-700 text-zinc-300">DaVinci AI: <strong class="text-white">7.5k</strong></span>
             </div>
         </div>
     </div>

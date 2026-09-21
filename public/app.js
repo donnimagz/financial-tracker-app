@@ -2038,6 +2038,28 @@ async function loadQ3Report() {
     const elUtilsBar = document.getElementById('q3UtilsBar');
     if (elUtilsBar) elUtilsBar.style.width = `${Math.min(100, parseFloat(utilsPct))}%`;
 
+    // 1-Month Operational Expenditure Model
+    if (data.monthly_run_rate) {
+      const mr = data.monthly_run_rate;
+      const elScenA = document.getElementById('q3MonthlyScenarioA');
+      if (elScenA) elScenA.innerHTML = `${formatUGX(mr.total_monthly_with_active_debt)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+      const elScenB = document.getElementById('q3MonthlyScenarioB');
+      if (elScenB) elScenB.innerHTML = `${formatUGX(mr.total_monthly_amortized)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+      const elScenC = document.getElementById('q3MonthlyScenarioC');
+      if (elScenC) elScenC.innerHTML = `${formatUGX(mr.total_monthly_debt_free)} <span class="text-xs font-normal text-zinc-500">UGX</span>`;
+
+      const elMRent = document.getElementById('q3MonthlyRent');
+      if (elMRent) elMRent.textContent = formatUGX(mr.rent);
+      const elMSubs = document.getElementById('q3MonthlySubs');
+      if (elMSubs) elMSubs.textContent = formatUGX(mr.subscriptions);
+      const elMDebts = document.getElementById('q3MonthlyDebts');
+      if (elMDebts) elMDebts.textContent = formatUGX(mr.debt_1_month_active);
+      const elMUtils = document.getElementById('q3MonthlyUtils');
+      if (elMUtils) elMUtils.textContent = formatUGX(mr.utilities);
+      const elMVar = document.getElementById('q3MonthlyVar');
+      if (elMVar) elMVar.textContent = formatUGX(mr.variable_spend);
+    }
+
     // Render Tables
     renderQ3ScheduleTable('q3RentTable', data.rent?.transactions || [], 'text-emerald-600 dark:text-emerald-400');
     renderQ3ScheduleTable('q3DebtsTable', data.debts?.transactions || [], 'text-rose-600 dark:text-rose-400');

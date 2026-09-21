@@ -348,6 +348,17 @@ class TestFinanceApp(unittest.TestCase):
         self.assertEqual(q3_v["rent"]["total"], 5100000)
         self.assertEqual(q3_v["debts"]["owed"], 1701360.0)
 
+        # 5. Verify Monthly Run-Rate blueprint
+        self.assertIn("monthly_run_rate", q3_v)
+        mr = q3_v["monthly_run_rate"]
+        self.assertEqual(mr["rent"], 1700000.0)
+        self.assertEqual(mr["subscriptions"], 283700.0)
+        self.assertEqual(len(mr["subscriptions_stack"]), 10)
+        self.assertEqual(mr["debt_1_month_active"], 1701360.0)
+        self.assertAlmostEqual(mr["total_monthly_with_active_debt"], 6332603.33, delta=1.0)
+        self.assertAlmostEqual(mr["total_monthly_amortized"], 5728763.33, delta=1.0)
+        self.assertAlmostEqual(mr["total_monthly_debt_free"], 4631243.33, delta=1.0)
+
 if __name__ == "__main__":
     unittest.main()
 

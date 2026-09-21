@@ -983,6 +983,39 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
         fixed_overhead = total_rent + total_debt + total_subs + total_utils
         variable_spend = total_q3 - fixed_overhead
 
+        subs_stack = [
+            {"name": "Google AI Pro", "amount": 76000.0, "category": "AI / Productivity"},
+            {"name": "Netflix", "amount": 51000.0, "category": "Entertainment"},
+            {"name": "iCloud (Personal)", "amount": 45000.0, "category": "Cloud & Storage"},
+            {"name": "Adobe Creative Cloud", "amount": 41000.0, "category": "Design & Software"},
+            {"name": "ChatGPT Plus", "amount": 23000.0, "category": "AI / Productivity"},
+            {"name": "Mum's iCloud", "amount": 13200.0, "category": "Family Storage"},
+            {"name": "Spotify Premium", "amount": 11000.0, "category": "Entertainment"},
+            {"name": "Google One Storage", "amount": 8000.0, "category": "Cloud & Storage"},
+            {"name": "DeepSeek API", "amount": 8000.0, "category": "AI Developer API"},
+            {"name": "DaVinci AI", "amount": 7500.0, "category": "AI / Creative"}
+        ]
+        monthly_subs_total = sum(s["amount"] for s in subs_stack)
+        monthly_rent = 1700000.0
+        monthly_utils = total_utils / 3.0
+        monthly_var = variable_spend / 3.0
+
+        monthly_run_rate = {
+            "rent": monthly_rent,
+            "subscriptions": monthly_subs_total,
+            "subscriptions_stack": subs_stack,
+            "debt_1_month_active": owed_debt,
+            "debt_1_month_amortized": total_debt / 3.0,
+            "utilities": monthly_utils,
+            "variable_spend": monthly_var,
+            "fixed_overhead_active": monthly_rent + monthly_subs_total + owed_debt + monthly_utils,
+            "fixed_overhead_amortized": monthly_rent + monthly_subs_total + (total_debt / 3.0) + monthly_utils,
+            "fixed_overhead_debt_free": monthly_rent + monthly_subs_total + monthly_utils,
+            "total_monthly_with_active_debt": monthly_rent + monthly_subs_total + owed_debt + monthly_utils + monthly_var,
+            "total_monthly_amortized": monthly_rent + monthly_subs_total + (total_debt / 3.0) + monthly_utils + monthly_var,
+            "total_monthly_debt_free": monthly_rent + monthly_subs_total + monthly_utils + monthly_var
+        }
+
         self._send_json({
             "total_q3": total_q3,
             "tx_count": cnt,
@@ -999,6 +1032,7 @@ class FinanceAPIHandler(SimpleHTTPRequestHandler):
             },
             "subscriptions": {"total": total_subs, "transactions": sub_txs},
             "utilities": {"total": total_utils, "transactions": util_txs},
+            "monthly_run_rate": monthly_run_rate,
             "months": months_data,
             "top_categories": cat_rows[:15],
             "pdf_url": "/reports/Q3_2026_Expense_Report.pdf",
