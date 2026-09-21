@@ -288,7 +288,7 @@ def generate_html(data):
             <div class="text-[11px] uppercase tracking-wider font-semibold text-amber-400 mb-1">Active Liabilities Owed</div>
             <div class="text-2xl font-extrabold text-amber-300 font-mono">{data['owed_debt']:,.0f} <span class="text-xs font-normal text-amber-500">UGX</span></div>
             <div class="text-[11px] text-amber-400/80 mt-1">
-                4 active debts • {data['repaid_debt']/1e6:.2f}M repaid
+                {len([r for r in data['debt_txs'] if r.get('flag') == 'debt-owed'])} active debts • {data['repaid_debt']/1e6:.2f}M repaid
             </div>
         </div>
     </div>
@@ -379,7 +379,7 @@ def generate_html(data):
                     <span class="text-xs font-mono text-zinc-400">{data['months']['2026-09']['count']} txs</span>
                 </div>
                 <div class="text-lg font-bold font-mono text-zinc-100">{data['months']['2026-09']['spend']:,.0f} UGX</div>
-                <div class="text-[11px] text-zinc-400 mt-1">Rent: 1.7M • Owed: {data['owed_debt']/1e3:.0f}k (4 debts)</div>
+                <div class="text-[11px] text-zinc-400 mt-1">Rent: 1.7M • Owed: {data['owed_debt']/1e3:.0f}k ({len([r for r in data['debt_txs'] if r.get('flag') == 'debt-owed'])} debts)</div>
             </div>
         </div>
     </div>
@@ -504,7 +504,7 @@ def generate_html(data):
             </div>
             <ul class="list-disc list-inside space-y-1 text-zinc-400">
                 <li><strong class="text-zinc-200">Rent is now formally structured:</strong> At 1.7M UGX/mo (5.1M in Q3), rent is your largest expense ({rent_pct:.1f}%). Accounting for it ensures accurate monthly cash flow forecasting.</li>
-                <li><strong class="text-zinc-200">Debt obligations & payables:</strong> 1.59M in bank/mobile loans fully settled. Current outstanding liabilities total {data['owed_debt']:,.0f} UGX across 4 active commitments: MoKash (327k), Zenka (203.4k), Health Okay (163k), and Maureen Asio (163k).</li>
+                <li><strong class="text-zinc-200">Debt obligations & payables:</strong> 1.59M in bank/mobile loans fully settled. Current outstanding liabilities total {data['owed_debt']:,.0f} UGX across 6 active commitments: Vernon (750k), MoKash (327k), Zenka (203.4k), Health Okay (163k), Maureen Asio (163k), and Benon - Ecopharm (95k).</li>
                 <li><strong class="text-zinc-200">Fixed overhead disciplined at {fixed_pct:.1f}%:</strong> Your 4 core obligations total {fixed/1e6:.2f}M UGX. Keeping fixed commitments near 50% gives ample flexibility for variable living and savings.</li>
             </ul>
         </div>

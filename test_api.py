@@ -26,17 +26,17 @@ class TestFinanceApp(unittest.TestCase):
         cur = self.conn.cursor()
         cur.execute("SELECT COUNT(*) FROM transactions")
         tx_count = cur.fetchone()[0]
-        self.assertEqual(tx_count, 4262, "Total transactions must be exactly 4262")
+        self.assertEqual(tx_count, 4264, "Total transactions must be exactly 4264")
 
-        # Full ledger expense benchmark: 225,391,559.00 UGX
+        # Full ledger expense benchmark: 226,236,559.00 UGX
         cur.execute("SELECT SUM(amount) FROM transactions WHERE type='Expense' AND flag != 'transfer-between-own-accounts'")
         full_exp = cur.fetchone()[0]
-        self.assertAlmostEqual(full_exp, 225391559.0, delta=1.0, msg="Full ledger expenditure mismatch")
+        self.assertAlmostEqual(full_exp, 226236559.0, delta=1.0, msg="Full ledger expenditure mismatch")
 
-        # Core window expense benchmark: 210,958,679.00 UGX
+        # Core window expense benchmark: 211,803,679.00 UGX
         cur.execute("SELECT SUM(amount) FROM transactions WHERE type='Expense' AND date >= '2022-03-01' AND flag != 'transfer-between-own-accounts'")
         core_exp = cur.fetchone()[0]
-        self.assertAlmostEqual(core_exp, 210958679.0, delta=1.0, msg="Core window expenditure mismatch")
+        self.assertAlmostEqual(core_exp, 211803679.0, delta=1.0, msg="Core window expenditure mismatch")
 
     def test_categories_aggregation(self):
         """Verify categories table has correct data."""
@@ -146,14 +146,14 @@ class TestFinanceApp(unittest.TestCase):
         self.assertIn("200 OK", status)
         stats = json.loads(body)
         self.assertEqual(stats["window"], "core")
-        self.assertAlmostEqual(stats["expenditure"], 210958679.0, delta=1.0)
+        self.assertAlmostEqual(stats["expenditure"], 211803679.0, delta=1.0)
 
         # 5. Test /api/transactions
         status, body = call_handler(f"GET /api/transactions?limit=2 HTTP/1.1\r\nHost: localhost\r\n{auth_header}\r\n")
         self.assertIn("200 OK", status)
         txs = json.loads(body)
         self.assertEqual(len(txs["data"]), 2)
-        self.assertEqual(txs["total"], 4262)
+        self.assertEqual(txs["total"], 4264)
 
         # 6. Test /api/categories
         status, body = call_handler(f"GET /api/categories HTTP/1.1\r\nHost: localhost\r\n{auth_header}\r\n")
@@ -226,7 +226,7 @@ class TestFinanceApp(unittest.TestCase):
         self.assertIn("200 OK", status)
         sync_st = json.loads(body)
         self.assertEqual(sync_st["status"], "healthy")
-        self.assertEqual(sync_st["total_transactions"], 4262)
+        self.assertEqual(sync_st["total_transactions"], 4264)
 
         # 14. Test POST /api/import unauthorized (no auth header)
         status, body = call_handler("POST /api/import HTTP/1.1\r\nHost: localhost\r\n\r\n")
@@ -258,7 +258,7 @@ class TestFinanceApp(unittest.TestCase):
         self.assertIn("last_7_days", glance)
         self.assertIn("month_to_date", glance)
         self.assertEqual(glance["today"]["date"], "2026-09-21")
-        self.assertEqual(glance["today"]["spend"], 1077860.0)
+        self.assertEqual(glance["today"]["spend"], 1922860.0)
         self.assertEqual(len(glance["last_7_days"]), 7)
         self.assertGreater(glance["month_to_date"]["total_spend"], 0)
         self.assertGreater(len(glance["month_to_date"]["top_categories"]), 0)
@@ -281,10 +281,10 @@ class TestFinanceApp(unittest.TestCase):
         status, body = call_handler(f"GET /api/q3-report HTTP/1.1\r\nHost: localhost\r\n{auth_header}\r\n")
         self.assertIn("200 OK", status)
         q3_res = json.loads(body)
-        self.assertEqual(q3_res["total_q3"], 16003390.0)
+        self.assertEqual(q3_res["total_q3"], 16848390.0)
         self.assertEqual(q3_res["rent"]["total"], 5100000)
-        self.assertEqual(q3_res["debts"]["total"], 2447560.0)
-        self.assertEqual(q3_res["debts"]["owed"], 856360.0)
+        self.assertEqual(q3_res["debts"]["total"], 3292560.0)
+        self.assertEqual(q3_res["debts"]["owed"], 1701360.0)
         self.assertEqual(q3_res["debts"]["repaid"], 1591200.0)
         self.assertGreater(q3_res["fixed_overhead"], 8000000)
         self.assertGreater(len(q3_res["top_categories"]), 5)
@@ -328,7 +328,7 @@ class TestFinanceApp(unittest.TestCase):
         res2 = req2.resp.getvalue().decode()
         self.assertIn("200 OK", res2)
         stats = json.loads(res2.split("\r\n\r\n")[1])
-        self.assertEqual(stats["transaction_count"], 3720)
+        self.assertEqual(stats["transaction_count"], 3722)
 
         # 3. Authenticated daily-glance call via Vercel route
         req3 = MockReq(f"GET /api/index.py?__route__=daily-glance HTTP/1.1\r\nAuthorization: Bearer {token}\r\n\r\n".encode("utf-8"))
@@ -337,7 +337,7 @@ class TestFinanceApp(unittest.TestCase):
         self.assertIn("200 OK", res3)
         glance = json.loads(res3.split("\r\n\r\n")[1])
         self.assertEqual(glance["today"]["date"], "2026-09-21")
-        self.assertEqual(glance["today"]["spend"], 1077860.0)
+        self.assertEqual(glance["today"]["spend"], 1922860.0)
 
         # 4. Authenticated q3-report call via Vercel route
         req4 = MockReq(f"GET /api/index.py?__route__=q3-report HTTP/1.1\r\nAuthorization: Bearer {token}\r\n\r\n".encode("utf-8"))
@@ -346,7 +346,7 @@ class TestFinanceApp(unittest.TestCase):
         self.assertIn("200 OK", res4)
         q3_v = json.loads(res4.split("\r\n\r\n")[1])
         self.assertEqual(q3_v["rent"]["total"], 5100000)
-        self.assertEqual(q3_v["debts"]["owed"], 856360.0)
+        self.assertEqual(q3_v["debts"]["owed"], 1701360.0)
 
 if __name__ == "__main__":
     unittest.main()
