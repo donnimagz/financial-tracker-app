@@ -611,7 +611,7 @@ def generate_html(data):
             </div>
             <ul class="list-disc list-inside space-y-1 text-zinc-400">
                 <li><strong class="text-zinc-200">Rent is now formally structured:</strong> At 1.7M UGX/mo (5.1M in Q3), rent is your largest expense ({rent_pct:.1f}%). Accounting for it ensures accurate monthly cash flow forecasting.</li>
-                <li><strong class="text-zinc-200">Debt obligations & payables:</strong> 1.59M in bank/mobile loans fully settled. Current outstanding liabilities total {data['owed_debt']:,.0f} UGX across 6 active commitments: Vernon (750k), MoKash (327k), Zenka (203.4k), Health Okay (163k), Maureen Asio (163k), and Benon - Ecopharm (95k).</li>
+                <li><strong class="text-zinc-200">Debt obligations & payables:</strong> 1.59M in bank/mobile loans fully settled. Current outstanding liabilities total {data['owed_debt']:,.0f} UGX across {len([r for r in data['debt_txs'] if r.get('flag') == 'debt-owed'])} active commitments: Vernon (750k), MoKash (327k), Zenka (203.4k), Bonny - House Help (220k), Health Okay (188.5k), Maureen Asio (163k), and Benon - Ecopharm (95k).</li>
                 <li><strong class="text-zinc-200">Fixed overhead disciplined at {fixed_pct:.1f}%:</strong> Your 4 core obligations total {fixed/1e6:.2f}M UGX. Keeping fixed commitments near 50% gives ample flexibility for variable living and savings.</li>
             </ul>
         </div>
@@ -633,24 +633,24 @@ def generate_html(data):
     return html_content
 
 def compile_pdf():
-    print("Fetching Q3 live report data...")
+    print("Fetching live report data from database...")
     data = fetch_report_data()
-
-    print("Generating report HTML...")
+    print("Generating comprehensive HTML report...")
     html = generate_html(data)
+
     with open(HTML_PATH, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"Saved HTML to {HTML_PATH}")
+    print(f"Report HTML generated: {HTML_PATH}")
 
-    # Compile with headless Google Chrome
+    # Compile PDF via Google Chrome
     chrome_bin = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     if os.path.exists(chrome_bin):
-        print(f"Compiling PDF via Google Chrome headless...")
+        print("Compiling PDF via Google Chrome headless...")
         cmd = [
             chrome_bin,
             "--headless",
             "--disable-gpu",
-            "--user-data-dir=/tmp/chrome_pdf_profile",
+            "--user-data-dir=/tmp/chrome_dev_user_profile",
             "--run-all-compositor-stages-before-draw",
             "--no-pdf-header-footer",
             f"--print-to-pdf={PDF_PATH}",
@@ -665,6 +665,12 @@ def compile_pdf():
 
         if os.path.exists(PDF_PATH) and os.path.getsize(PDF_PATH) > 0:
             print(f"Successfully generated PDF ({os.path.getsize(PDF_PATH)} bytes): {PDF_PATH}")
+            finances_dest = "/Users/donmagezi/Documents/Finances/Q3_2026_Expense_Report.pdf"
+            try:
+                shutil.copyfile(PDF_PATH, finances_dest)
+                print(f"Copied PDF to Finances workspace: {finances_dest}")
+            except Exception as e:
+                print("Could not copy to Finances workspace:", e)
             if os.path.exists(ARTIFACT_DIR):
                 art_dest = os.path.join(ARTIFACT_DIR, "Q3_2026_Expense_Report.pdf")
                 shutil.copyfile(PDF_PATH, art_dest)

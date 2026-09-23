@@ -51,6 +51,9 @@ def fetch_data():
         elif 'health okay' in desc or 'maureen' in desc or 'benon' in desc or 'ecopharm' in desc:
             d['loan_type'] = 'Medication Debt'
             d['type_badge'] = 'Pharmacy Credit'
+        elif 'bonny' in desc or 'house help' in desc or 'staff' in desc:
+            d['loan_type'] = 'House Help Wages'
+            d['type_badge'] = 'Domestic Staff'
         else:
             d['loan_type'] = 'Liability'
             d['type_badge'] = 'Credit'
@@ -156,12 +159,21 @@ def fetch_data():
     tot_scenario_b = monthly_rent + monthly_subs + debt_amortized + monthly_utils + monthly_variable
     tot_scenario_c = monthly_rent + monthly_subs + monthly_utils + monthly_variable
 
+    personal_subtotal = sum(d['amount'] for d in debt_txs if d.get('type_badge') == 'Personal Credit')
+    digital_subtotal = sum(d['amount'] for d in debt_txs if d.get('type_badge') == 'Digital Credit')
+    pharmacy_subtotal = sum(d['amount'] for d in debt_txs if d.get('type_badge') == 'Pharmacy Credit')
+    staff_subtotal = sum(d['amount'] for d in debt_txs if d.get('type_badge') == 'Domestic Staff')
+
     return {
         "monthly_rent": monthly_rent,
         "subs_stack": subs_stack,
         "monthly_subs": monthly_subs,
         "debt_txs": debt_txs,
         "total_debt_owed": total_debt_owed,
+        "personal_subtotal": personal_subtotal,
+        "digital_subtotal": digital_subtotal,
+        "pharmacy_subtotal": pharmacy_subtotal,
+        "staff_subtotal": staff_subtotal,
         "settled_txs": settled_txs,
         "total_settled_loans": total_settled_loans,
         "debt_amortized": debt_amortized,
@@ -279,7 +291,7 @@ def generate_html(data):
                 <span class="text-xs uppercase tracking-widest font-mono text-emerald-400 font-semibold">Personal Wealth Ledger • Don Magezi</span>
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-white">Monthly Operational Expenditure & Run-Rate Audit</h1>
-            <p class="text-xs text-zinc-400 mt-0.5">30-Day Financial Blueprint • Rent (1.7M), Subscriptions (318.2k), Loans & Liabilities (1.701M) & Utilities (157.9k)</p>
+            <p class="text-xs text-zinc-400 mt-0.5">30-Day Financial Blueprint • Rent (1.7M), Subscriptions (318.2k), Loans & Liabilities ({data['total_debt_owed']/1e6:.3f}M) & Utilities (157.9k)</p>
         </div>
         <div class="text-right">
             <span class="inline-block px-2.5 py-1 bg-zinc-800 border border-zinc-700 text-zinc-300 rounded text-xs font-mono">1-MONTH EXECUTIVE AUDIT</span>
@@ -296,7 +308,7 @@ def generate_html(data):
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">AGGRESSIVE</span>
             </div>
             <div class="text-2xl font-bold font-mono text-white mt-1">{tot_a:,.0f} <span class="text-xs font-normal text-zinc-400">UGX</span></div>
-            <p class="text-xs text-zinc-400 mt-2">Clears 100% of all 6 active loans & liabilities ({data['total_debt_owed']:,.0f} UGX) in 30 days.</p>
+            <p class="text-xs text-zinc-400 mt-2">Clears 100% of all {len(data['debt_txs'])} active loans & liabilities ({data['total_debt_owed']:,.0f} UGX) in 30 days.</p>
             <div class="text-[11px] font-mono text-rose-300/80 mt-2 pt-2 border-t border-rose-900/40">
                 Fixed: {fixed_a:,.0f} • Variable: {data['monthly_variable']:,.0f}
             </div>
@@ -322,7 +334,7 @@ def generate_html(data):
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">STEADY STATE</span>
             </div>
             <div class="text-2xl font-bold font-mono text-white mt-1">{tot_c:,.0f} <span class="text-xs font-normal text-zinc-400">UGX</span></div>
-            <p class="text-xs text-zinc-400 mt-2">Ongoing recurring monthly burn rate once all 6 credit balances are retired.</p>
+            <p class="text-xs text-zinc-400 mt-2">Ongoing recurring monthly burn rate once all {len(data['debt_txs'])} credit balances are retired.</p>
             <div class="text-[11px] font-mono text-emerald-300/80 mt-2 pt-2 border-t border-emerald-900/40">
                 Fixed: {fixed_a - data['total_debt_owed']:,.0f} • Variable: {data['monthly_variable']:,.0f}
             </div>
@@ -331,7 +343,7 @@ def generate_html(data):
 
     <!-- 5 Monthly Pillars Grid -->
     <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 mb-6">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-300 mb-3">🎯 Five Pillars of Monthly Expenditure (Scenario A: 6,367,103 UGX)</h2>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-300 mb-3">🎯 Five Pillars of Monthly Expenditure (Scenario A: {tot_a:,.0f} UGX)</h2>
         <div class="grid grid-cols-5 gap-3 text-center">
             <!-- Rent -->
             <div class="p-3 rounded-lg border border-zinc-800 bg-zinc-950/60">
@@ -346,7 +358,7 @@ def generate_html(data):
                 <div class="text-rose-400 text-[10px] uppercase font-semibold">💳 Loans & Debts</div>
                 <div class="text-base font-bold font-mono text-rose-300 mt-0.5">{data['total_debt_owed']:,.0f}</div>
                 <div class="text-[11px] text-rose-400 font-mono mt-1">{data['total_debt_owed']/tot_a*100:.1f}%</div>
-                <div class="text-[10px] text-rose-500/80 mt-0.5">6 Active Creditors</div>
+                <div class="text-[10px] text-rose-500/80 mt-0.5">{len(data['debt_txs'])} Active Creditors</div>
             </div>
 
             <!-- Subscriptions -->
@@ -407,8 +419,8 @@ def generate_html(data):
         <div class="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 mb-3.5">
             <div class="flex justify-between items-center mb-2">
                 <div>
-                    <h3 class="font-bold text-xs uppercase tracking-wider text-rose-400">💳 Active Loans & Liabilities Schedule (1,701,360 UGX Total)</h3>
-                    <p class="text-[11px] text-zinc-400">Itemization of all 6 active liabilities scheduled for 1-month liquidation across 3 debt classes.</p>
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-rose-400">💳 Active Loans & Liabilities Schedule ({data['total_debt_owed']:,.0f} UGX Total)</h3>
+                    <p class="text-[11px] text-zinc-400">Itemization of all {len(data['debt_txs'])} active liabilities scheduled for 1-month liquidation across 4 debt classes.</p>
                 </div>
                 <span class="font-mono text-xs text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">{data['total_debt_owed']:,.0f} UGX Total</span>
             </div>
@@ -429,18 +441,22 @@ def generate_html(data):
             </table>
 
             <!-- Subtotals summary bar -->
-            <div class="mt-2.5 pt-2.5 border-t border-zinc-800/80 grid grid-cols-3 gap-2 text-[10px] font-mono">
+            <div class="mt-2.5 pt-2.5 border-t border-zinc-800/80 grid grid-cols-4 gap-2 text-[10px] font-mono">
                 <div class="p-1.5 rounded bg-zinc-950/60 border border-zinc-800/60 flex justify-between">
-                    <span class="text-zinc-400">Personal Loan (Vernon):</span>
-                    <span class="text-rose-400 font-semibold">750,000 UGX</span>
+                    <span class="text-zinc-400">Personal (Vernon):</span>
+                    <span class="text-rose-400 font-semibold">{data['personal_subtotal']:,.0f} UGX</span>
                 </div>
                 <div class="p-1.5 rounded bg-zinc-950/60 border border-zinc-800/60 flex justify-between">
-                    <span class="text-zinc-400">Mobile Credit (MoKash + Zenka):</span>
-                    <span class="text-rose-400 font-semibold">530,360 UGX</span>
+                    <span class="text-zinc-400">Digital (MoKash + Zenka):</span>
+                    <span class="text-rose-400 font-semibold">{data['digital_subtotal']:,.0f} UGX</span>
                 </div>
                 <div class="p-1.5 rounded bg-zinc-950/60 border border-zinc-800/60 flex justify-between">
-                    <span class="text-zinc-400">Pharmacy Credit (3 Creditors):</span>
-                    <span class="text-rose-400 font-semibold">421,000 UGX</span>
+                    <span class="text-zinc-400">Pharmacy (3 Creditors):</span>
+                    <span class="text-rose-400 font-semibold">{data['pharmacy_subtotal']:,.0f} UGX</span>
+                </div>
+                <div class="p-1.5 rounded bg-zinc-950/60 border border-zinc-800/60 flex justify-between">
+                    <span class="text-zinc-400">Staff (Bonny Arrears):</span>
+                    <span class="text-rose-400 font-semibold">{data['staff_subtotal']:,.0f} UGX</span>
                 </div>
             </div>
         </div>
@@ -508,8 +524,8 @@ def generate_html(data):
                 <span>💡 Strategic Monthly Cash-Flow Takeaways</span>
             </div>
             <ul class="list-disc list-inside space-y-0.5 text-zinc-400 text-[11px]">
-                <li><strong class="text-zinc-200">Loan Liquidation Sprint (Scenario A):</strong> Committing <strong>6,367,103 UGX</strong> over the next 30 days permanently eliminates all 6 credit balances (Vernon personal loan 750k, MoKash 327k, Zenka 203.4k, Health Okay 163k, Maureen Asio 163k, Benon 95k).</li>
-                <li><strong class="text-zinc-200">Post-Loan Living Baseline (Scenario C):</strong> Once all loans are fully retired, your monthly burn rate contracts to <strong>4,665,743 UGX/month</strong>, unlocking an immediate monthly cash surplus of 1.70M UGX.</li>
+                <li><strong class="text-zinc-200">Loan Liquidation Sprint (Scenario A):</strong> Committing <strong>{tot_a:,.0f} UGX</strong> over the next 30 days permanently eliminates all {len(data['debt_txs'])} credit balances (Vernon personal loan 750k, MoKash 327k, Zenka 203.4k, Bonny wage arrears 220k, Health Okay 188.5k, Maureen Asio 163k, Benon 95k).</li>
+                <li><strong class="text-zinc-200">Post-Loan Living Baseline (Scenario C):</strong> Once all loans are fully retired, your monthly burn rate contracts to <strong>{tot_c:,.0f} UGX/month</strong>, unlocking an immediate monthly cash surplus of {data['total_debt_owed']/1e6:.2f}M UGX.</li>
                 <li><strong class="text-zinc-200">Lean Subscription Stack:</strong> Pruning DaVinci, Netflix, and Spotify while keeping Adobe ($25) and personal iCloud ($25) locks in digital overhead at <strong>318,200 UGX/month</strong>.</li>
             </ul>
         </div>
@@ -568,6 +584,13 @@ def compile_pdf():
     if os.path.exists(OUTPUT_PDF) and os.path.getsize(OUTPUT_PDF) > 50000:
         pdf_size = os.path.getsize(OUTPUT_PDF)
         print(f"Successfully generated 1-Month PDF ({pdf_size} bytes): {OUTPUT_PDF}")
+        # Copy to Finances workspace root
+        finances_dest = "/Users/donmagezi/Documents/Finances/Monthly_Expense_Report.pdf"
+        try:
+            shutil.copy2(OUTPUT_PDF, finances_dest)
+            print(f"Copied PDF to Finances workspace: {finances_dest}")
+        except Exception as e:
+            print("Could not copy to Finances workspace:", e)
         if os.path.exists(ARTIFACT_DIR):
             dest = os.path.join(ARTIFACT_DIR, "Monthly_Expense_Report.pdf")
             shutil.copy2(OUTPUT_PDF, dest)
