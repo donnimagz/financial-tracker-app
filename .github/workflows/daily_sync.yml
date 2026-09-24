@@ -56,7 +56,7 @@ jobs:
           
           if [[ -n $(git status -s finance.db data/) ]]; then
             git add finance.db data/
-            git commit -m "Auto-sync: Daily ledger update $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
+            git commit -m "Auto-sync: Daily ledger update $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push origin main
             echo "Changes pushed to main - Render and Vercel auto-deploys triggered."
           else
